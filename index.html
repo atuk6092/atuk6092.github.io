@@ -1214,6 +1214,7 @@ const Sound = {
       if(type==='bell'){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(830,c.currentTime);g.gain.setValueAtTime(0.6,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+1.5);o.start();o.stop(c.currentTime+1.5);}
       else if(type==='alarm'){for(let i=0;i<5;i++){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(880,c.currentTime+i*0.35);g.gain.setValueAtTime(0.5,c.currentTime+i*0.35);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+i*0.35+0.3);o.start(c.currentTime+i*0.35);o.stop(c.currentTime+i*0.35+0.3);}}
       else if(type==='azan'){[440,494,523,587,659,587,523,494].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(f,c.currentTime+i*0.3);g.gain.setValueAtTime(0.5,c.currentTime+i*0.3);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+i*0.3+0.25);o.start(c.currentTime+i*0.3);o.stop(c.currentTime+i*0.3+0.25);});}
+      else if(type==='tick'){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(1200,c.currentTime);g.gain.setValueAtTime(0.25,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.08);o.start();o.stop(c.currentTime+0.08);}
     } catch(e){}
   }
 };
@@ -2627,12 +2628,32 @@ function renderOyunlar() {
       <div><div style="font-weight:700;color:var(--p)">Sıralama Oyunu</div><div style="font-size:0.8rem;color:var(--tm)">Doğru sıraya diz!</div></div>
     </div>
     <div onclick="oyunBasla('esmaeslestir')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
-      <div style="font-size:2rem">🌈</div>
+      <div style="font-size:2rem">🔗</div>
       <div><div style="font-weight:700;color:var(--p)">İsim Eşleştirme</div><div style="font-size:0.8rem;color:var(--tm)">Esma'yı anlamıyla eşleştir!</div></div>
     </div>
     <div onclick="oyunBasla('cark')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
       <div style="font-size:2rem">🎁</div>
       <div><div style="font-weight:700;color:var(--p)">Günlük Sürpriz</div><div style="font-size:0.8rem;color:var(--tm)">Çarkı çevir, sürprizi gör!</div></div>
+    </div>
+    <div onclick="oyunBasla('kelimeavi')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="font-size:2rem">🔤</div>
+      <div><div style="font-weight:700;color:var(--p)">Kelime Bul</div><div style="font-size:0.8rem;color:var(--tm)">Karışık harflerden kelimeyi bul!</div></div>
+    </div>
+    <div onclick="oyunBasla('tesbih')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="font-size:2rem">🎵</div>
+      <div><div style="font-weight:700;color:var(--p)">Tesbih Çek</div><div style="font-size:0.8rem;color:var(--tm)">Dokun, zikret, say!</div></div>
+    </div>
+    <div onclick="oyunBasla('namazyildiz')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="font-size:2rem">📅</div>
+      <div><div style="font-weight:700;color:var(--p)">Namaz Yıldızları</div><div style="font-size:0.8rem;color:var(--tm)">Namaz kıldıkça yıldız topla!</div></div>
+    </div>
+    <div onclick="oyunBasla('yapboz')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="font-size:2rem">🧩</div>
+      <div><div style="font-weight:700;color:var(--p)">Yapboz</div><div style="font-size:0.8rem;color:var(--tm)">Parçaları doğru yere koy!</div></div>
+    </div>
+    <div onclick="oyunBasla('resimtani')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="font-size:2rem">🔍</div>
+      <div><div style="font-weight:700;color:var(--p)">Hangisi?</div><div style="font-size:0.8rem;color:var(--tm)">Doğru resmi bul! (küçükler için)</div></div>
     </div>
   `;
 }
@@ -2645,6 +2666,11 @@ function oyunBasla(oyun) {
   else if(oyun === 'siralama') siralamaBasla();
   else if(oyun === 'esmaeslestir') esmaEslestirBasla();
   else if(oyun === 'cark') carkGoster();
+  else if(oyun === 'kelimeavi') kelimeBasla();
+  else if(oyun === 'tesbih') tesbihGoster();
+  else if(oyun === 'namazyildiz') namazYildizGoster();
+  else if(oyun === 'yapboz') yapbozBasla();
+  else if(oyun === 'resimtani') resimTaniBasla();
 }
 
 function oyunGeriDon() { renderOyunlar(); }
@@ -2964,7 +2990,7 @@ function esmaEsGoster() {
   el.innerHTML = `
     <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card">
-      <div class="card-title" style="text-align:center">🌈 İsmi Anlamıyla Eşleştir</div>
+      <div class="card-title" style="text-align:center">🔗 İsmi Anlamıyla Eşleştir</div>
       <div style="font-size:0.8rem;color:var(--tm);text-align:center;margin-bottom:14px">Önce isme, sonra anlamına tıkla</div>
       <div style="display:flex;gap:10px">
         <div style="flex:1">
@@ -3054,6 +3080,261 @@ function carkCevir() {
       carkGoster();
     }
   }, 120);
+}
+
+// ---------- 🔤 OYUN 8: KELİME BUL (Karışık Harfler) ----------
+const KELIME_HAVUZ = [
+  { k:'NAMAZ', ipucu:'Günde 5 vakit kılınır' },
+  { k:'ORUC', ipucu:'Ramazan ayında tutulur' },
+  { k:'KABE', ipucu:'Mekke\'de, kıblemiz' },
+  { k:'DUA', ipucu:'Allah\'a yalvarmak' },
+  { k:'ABDEST', ipucu:'Namazdan önce alınır' },
+  { k:'CAMI', ipucu:'İbadet edilen yer' },
+  { k:'KURAN', ipucu:'Kutsal kitabımız' },
+  { k:'ZEKAT', ipucu:'Fakire verilen yardım' },
+  { k:'HAC', ipucu:'Mekke\'ye yapılan ibadet' },
+  { k:'SELAM', ipucu:'Karşılaşınca verilir' },
+  { k:'MELEK', ipucu:'Nurdan yaratılan varlık' },
+  { k:'CENNET', ipucu:'İyilerin gideceği yer' },
+];
+let _kelimeState = null;
+function kelimeBasla() {
+  const secili = KELIME_HAVUZ[Math.floor(Math.random()*KELIME_HAVUZ.length)];
+  const harfler = secili.k.split('').sort(()=>Math.random()-0.5);
+  _kelimeState = { kelime:secili.k, ipucu:secili.ipucu, harfler, secilen:[] };
+  kelimeGoster();
+}
+function kelimeGoster() {
+  const el = document.getElementById('oyunlarList');
+  const st = _kelimeState;
+  const yazilan = st.secilen.map(i=>st.harfler[i]).join('');
+  const tamam = st.secilen.length === st.kelime.length;
+  const dogruMu = yazilan === st.kelime;
+  el.innerHTML = `
+    <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card">
+      <div class="card-title" style="text-align:center">🔤 Kelimeyi Bul</div>
+      <div style="text-align:center;font-size:0.85rem;color:var(--tm);margin-bottom:6px">İpucu: ${st.ipucu}</div>
+      <div style="text-align:center;font-size:1.6rem;font-weight:800;letter-spacing:6px;color:var(--p);min-height:44px;margin:14px 0;border-bottom:3px solid var(--b);padding-bottom:8px">${yazilan || '...'}</div>
+      ${!tamam ? `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+        ${st.harfler.map((h,i)=>{
+          const used = st.secilen.includes(i);
+          return `<button onclick="kelimeSec(${i})" ${used?'disabled':''} style="width:46px;height:46px;border-radius:10px;font-size:1.2rem;font-weight:800;cursor:pointer;border:2px solid var(--p);background:${used?'var(--b)':'var(--bg)'};color:${used?'var(--tm)':'var(--p)'};opacity:${used?0.3:1}">${h}</button>`;
+        }).join('')}
+      </div>
+      <button onclick="kelimeSil()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:10px;border-radius:10px;font-weight:600;margin-top:14px;cursor:pointer">⌫ Geri Al</button>`
+      : `<div style="text-align:center">
+        <div style="font-size:2.5rem">${dogruMu?'🎉':'🤔'}</div>
+        <div style="font-weight:700;color:${dogruMu?'#4CAF50':'#E53935'};margin:8px 0">${dogruMu?'Bravo! Doğru kelime!':'Olmadı, tekrar dene!'}</div>
+        <button onclick="kelimeBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;margin-top:8px;cursor:pointer">🔄 Yeni Kelime</button>
+      </div>`}
+    </div>`;
+  if(tamam && dogruMu) cocukKutla('kelime');
+}
+function kelimeSec(i) { _kelimeState.secilen.push(i); kelimeGoster(); }
+function kelimeSil() { _kelimeState.secilen.pop(); kelimeGoster(); }
+
+// ---------- 🎵 OYUN 9: TESBİH ÇEK ----------
+const TESBIH_ZIKIRLER = [
+  { z:'Subhanallah', hedef:33 },
+  { z:'Elhamdülillah', hedef:33 },
+  { z:'Allahu Ekber', hedef:33 },
+  { z:'La ilahe illallah', hedef:33 },
+];
+let _tesbihState = null;
+function tesbihGoster() {
+  if(!_tesbihState) _tesbihState = { zikirIdx:0, sayac:0 };
+  const el = document.getElementById('oyunlarList');
+  const st = _tesbihState;
+  const z = TESBIH_ZIKIRLER[st.zikirIdx];
+  const tamam = st.sayac >= z.hedef;
+  el.innerHTML = `
+    <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">🎵 Tesbih Çek</div>
+      <div style="font-size:1.3rem;font-weight:800;color:var(--p);margin:10px 0">${z.z}</div>
+      <div style="font-size:0.85rem;color:var(--tm);margin-bottom:14px">Hedef: ${z.hedef}</div>
+      <div onclick="tesbihDokun()" style="width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;user-select:none;box-shadow:0 6px 20px rgba(27,94,32,0.4);transition:0.1s" id="tesbihDaire">
+        <div style="font-size:3rem;font-weight:800">${st.sayac}</div>
+        <div style="font-size:0.75rem;opacity:0.9">DOKUN</div>
+      </div>
+      ${tamam?`<div style="margin-top:16px"><div style="font-size:2rem">🎉</div><div style="font-weight:700;color:#4CAF50">${z.hedef} kez tamamlandı!</div>
+        ${st.zikirIdx < TESBIH_ZIKIRLER.length-1 ? `<button onclick="tesbihSonraki()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;margin-top:10px;cursor:pointer">➡️ Sonraki Zikir</button>` : `<div style="margin-top:8px;font-weight:700;color:var(--p)">🤲 Tüm zikirleri tamamladın, maşallah!</div>`}
+      </div>`:''}
+      <button onclick="tesbihSifirla()" style="width:100%;background:transparent;color:var(--tm);border:1px solid var(--b);padding:8px;border-radius:10px;font-size:0.8rem;margin-top:14px;cursor:pointer">↺ Sıfırla</button>
+    </div>`;
+}
+function tesbihDokun() {
+  const st = _tesbihState;
+  const z = TESBIH_ZIKIRLER[st.zikirIdx];
+  if(st.sayac >= z.hedef) return;
+  st.sayac++;
+  Sound.play('tick');
+  const daire = document.getElementById('tesbihDaire');
+  if(daire){ daire.style.transform='scale(0.92)'; setTimeout(()=>{if(daire)daire.style.transform='scale(1)';},80); }
+  if(st.sayac >= z.hedef) cocukKutla('tesbih');
+  tesbihGoster();
+}
+function tesbihSonraki() { _tesbihState.zikirIdx++; _tesbihState.sayac=0; tesbihGoster(); }
+function tesbihSifirla() { _tesbihState.sayac=0; tesbihGoster(); }
+
+// ---------- 📅 OYUN 10: NAMAZ YILDIZLARI ----------
+const NAMAZ_VAKITLERI = [
+  { k:'sabah', ad:'Sabah', ik:'🌅' },
+  { k:'ogle', ad:'Öğle', ik:'☀️' },
+  { k:'ikindi', ad:'İkindi', ik:'🌤️' },
+  { k:'aksam', ad:'Akşam', ik:'🌇' },
+  { k:'yatsi', ad:'Yatsı', ik:'🌃' },
+];
+function namazYildizGoster() {
+  const el = document.getElementById('oyunlarList');
+  const bugun = new Date().toISOString().slice(0,10);
+  let kayit = getData('namazYildiz') || {};
+  if(kayit.tarih !== bugun) { kayit = { tarih:bugun, kilinan:[], toplamYildiz:(kayit.toplamYildiz||0) }; setData('namazYildiz', kayit); }
+  const kilinan = kayit.kilinan || [];
+  const toplam = kayit.toplamYildiz || 0;
+  el.innerHTML = `
+    <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff">
+      <div style="font-size:1.1rem;font-weight:800">📅 Namaz Yıldızlarım</div>
+      <div style="font-size:2rem;font-weight:800;margin-top:6px">⭐ ${toplam}</div>
+      <div style="font-size:0.8rem;opacity:0.9">Toplam yıldız</div>
+    </div>
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--tm);text-align:center;margin-bottom:12px">Bugün kıldığın namaza dokun, yıldız kazan! (${kilinan.length}/5)</div>
+      ${NAMAZ_VAKITLERI.map(v=>{
+        const k = kilinan.includes(v.k);
+        return `<div onclick="namazKil('${v.k}')" class="card" style="cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:8px;${k?'background:rgba(76,175,80,0.15)':''}">
+          <div style="font-size:1.8rem">${v.ik}</div>
+          <div style="flex:1;font-weight:700;color:var(--p)">${v.ad} Namazı</div>
+          <div style="font-size:1.5rem">${k?'⭐':'☆'}</div>
+        </div>`;
+      }).join('')}
+      ${kilinan.length===5?`<div style="text-align:center;margin-top:10px;font-weight:700;color:#4CAF50">🎉 MAŞAALLAH! Bugün 5 vakti tamamladın!</div>`:''}
+    </div>`;
+}
+function namazKil(vakit) {
+  const bugun = new Date().toISOString().slice(0,10);
+  let kayit = getData('namazYildiz') || { tarih:bugun, kilinan:[], toplamYildiz:0 };
+  if(kayit.tarih !== bugun) kayit = { tarih:bugun, kilinan:[], toplamYildiz:(kayit.toplamYildiz||0) };
+  if(kayit.kilinan.includes(vakit)) {
+    kayit.kilinan = kayit.kilinan.filter(v=>v!==vakit);
+    kayit.toplamYildiz = Math.max(0,(kayit.toplamYildiz||0)-1);
+  } else {
+    kayit.kilinan.push(vakit);
+    kayit.toplamYildiz = (kayit.toplamYildiz||0)+1;
+    cocukKutla('namaz');
+    if(kayit.kilinan.length===5) setTimeout(()=>notify('🎉 MAŞAALLAH! 5 vakit namaz tamam!','success'),500);
+  }
+  setData('namazYildiz', kayit);
+  namazYildizGoster();
+}
+
+// ---------- 🧩 OYUN 11: YAPBOZ (Emoji Izgara Sıralama) ----------
+const YAPBOZ_RESIMLER = ['🕌','🕋','🌙','⭐'];
+let _yapbozState = null;
+function yapbozBasla() {
+  // 3x3 ızgara, 8 parça + 1 boşluk (kayan yapboz)
+  const resim = YAPBOZ_RESIMLER[Math.floor(Math.random()*YAPBOZ_RESIMLER.length)];
+  let dizi = [1,2,3,4,5,6,7,8,0]; // 0 = boşluk
+  // Karıştır (çözülebilir kalması için rastgele geçerli hamleler yap)
+  for(let i=0;i<60;i++){
+    const bos = dizi.indexOf(0);
+    const komsular = yapbozKomsular(bos);
+    const sec = komsular[Math.floor(Math.random()*komsular.length)];
+    [dizi[bos],dizi[sec]]=[dizi[sec],dizi[bos]];
+  }
+  _yapbozState = { dizi, resim, hamle:0 };
+  yapbozGoster();
+}
+function yapbozKomsular(idx) {
+  const r = Math.floor(idx/3), c = idx%3;
+  const k = [];
+  if(r>0) k.push(idx-3);
+  if(r<2) k.push(idx+3);
+  if(c>0) k.push(idx-1);
+  if(c<2) k.push(idx+1);
+  return k;
+}
+function yapbozGoster() {
+  const el = document.getElementById('oyunlarList');
+  const st = _yapbozState;
+  const cozuldu = st.dizi.every((v,i)=> i===8 ? v===0 : v===i+1);
+  el.innerHTML = `
+    <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">🧩 Yapboz ${st.resim}</div>
+      <div style="font-size:0.8rem;color:var(--tm);margin-bottom:10px">Sayıları 1-8 sırasına diz! Hamle: ${st.hamle}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto">
+        ${st.dizi.map((v,i)=>{
+          if(v===0) return `<div style="aspect-ratio:1;border-radius:10px;background:transparent;border:2px dashed var(--b)"></div>`;
+          return `<div onclick="yapbozOyna(${i})" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff">${v}</div>`;
+        }).join('')}
+      </div>
+      ${cozuldu?`<div style="margin-top:14px"><div style="font-size:2.5rem">🎉</div><div style="font-weight:700;color:#4CAF50">Yapbozu çözdün!</div><button onclick="yapbozBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;margin-top:10px;cursor:pointer">🔄 Yeni Yapboz</button></div>`:''}
+    </div>`;
+  if(cozuldu) cocukKutla('yapboz');
+}
+function yapbozOyna(i) {
+  const st = _yapbozState;
+  const bos = st.dizi.indexOf(0);
+  if(yapbozKomsular(i).includes(bos)) {
+    [st.dizi[i],st.dizi[bos]]=[st.dizi[bos],st.dizi[i]];
+    st.hamle++;
+    yapbozGoster();
+  }
+}
+
+// ---------- 🔍 OYUN 12: HANGİSİ? (Resim Tanıma - küçükler için) ----------
+const RESIM_SORULAR = [
+  { soru:'Hangisi cami?', dogru:'🕌', secenekler:['🕌','🚗','🍎'] },
+  { soru:'Hangisi ay?', dogru:'🌙', secenekler:['⚽','🌙','🐱'] },
+  { soru:'Hangisi yıldız?', dogru:'⭐', secenekler:['🌳','⭐','🚌'] },
+  { soru:'Hangisi Kâbe?', dogru:'🕋', secenekler:['🕋','🎈','🍕'] },
+  { soru:'Hangisi kitap?', dogru:'📖', secenekler:['📖','🎸','🦋'] },
+  { soru:'Hangisi dua eden el?', dogru:'🤲', secenekler:['👟','🤲','🎮'] },
+  { soru:'Hangisi tesbih?', dogru:'📿', secenekler:['📿','🍔','🚲'] },
+  { soru:'Hangisi koyun?', dogru:'🐑', secenekler:['🐑','🚀','🎩'] },
+];
+let _resimState = null;
+function resimTaniBasla() {
+  const sorular = [...RESIM_SORULAR].sort(()=>Math.random()-0.5).slice(0,6);
+  _resimState = { sorular, idx:0, dogru:0 };
+  resimGoster();
+}
+function resimGoster() {
+  const el = document.getElementById('oyunlarList');
+  const st = _resimState;
+  if(st.idx >= st.sorular.length) {
+    el.innerHTML = `
+      <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:3rem">🎉</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">${st.sorular.length} sorudan ${st.dogru} doğru!</div>
+        <button onclick="resimTaniBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;margin-top:8px;cursor:pointer">🔄 Tekrar Oyna</button>
+      </div>`;
+    if(st.dogru >= st.sorular.length*0.6) cocukKutla('resim');
+    return;
+  }
+  const q = st.sorular[st.idx];
+  const karisik = [...q.secenekler].sort(()=>Math.random()-0.5);
+  el.innerHTML = `
+    <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:0.85rem;color:var(--tm);margin-bottom:8px">Soru ${st.idx+1}/${st.sorular.length}</div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--p);margin:16px 0">${q.soru}</div>
+      <div style="display:flex;gap:12px;justify-content:center">
+        ${karisik.map(e=>`<button onclick="resimCevap('${e}')" style="width:90px;height:90px;font-size:3rem;border-radius:16px;border:3px solid var(--b);background:var(--bg);cursor:pointer;transition:0.2s">${e}</button>`).join('')}
+      </div>
+    </div>`;
+}
+function resimCevap(secilen) {
+  const st = _resimState;
+  const q = st.sorular[st.idx];
+  if(secilen === q.dogru){ st.dogru++; cocukKutla('resim'); notify('✅ Doğru!','success'); }
+  else { notify('🤔 Tekrar dene!','info'); }
+  st.idx++;
+  setTimeout(resimGoster, 700);
 }
 
 // ==================== ESMAÜL HÜSNA ====================
