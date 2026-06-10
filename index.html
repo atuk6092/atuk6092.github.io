@@ -2869,37 +2869,28 @@ let _kitapDurum = { tip:null, url:null };
 // Uygulamayla birlikte gelen yerleşik kitaplar
 const YERLESIK_KITAPLAR = [
   { ad:'Temel Dini Bilgiler', aciklama:'Diyanet İşleri Başkanlığı yayını (EPUB).', dosya:'temel_dini_bilgiler.epub', tip:'epub' },
+  { ad:'Niçin İnanıyorum', aciklama:'İman ve inanç üzerine bir eser (EPUB).', dosya:'nicin_inaniyorum_.epub', tip:'epub' },
 ];
 function renderKitap() {
   const el = document.getElementById('kitapArea');
   if(!el) return;
   el.innerHTML = `
-    <div style="font-weight:700;color:var(--p);margin-bottom:8px;font-size:1rem">📚 Hazır Kitaplar</div>
-    <div style="font-size:0.82rem;color:var(--tm);margin-bottom:10px">Uygulama ile birlikte gelen kitaplar:</div>
+    <div style="font-weight:700;color:var(--p);margin-bottom:8px;font-size:1rem">📚 Kitaplar</div>
+    <div style="font-size:0.82rem;color:var(--tm);margin-bottom:12px;line-height:1.5">Aşağıdaki kitapları açıp okuyabilirsiniz. "Aç ve Oku" butonuna basın, sayfaları okuma alanında kaydırarak ilerleyin.</div>
     ${YERLESIK_KITAPLAR.map(k => `
       <div style="border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:10px">
         <div style="font-weight:700;color:var(--p);font-size:0.98rem;margin-bottom:4px">📗 ${k.ad}</div>
         <div style="font-size:0.85rem;color:var(--tm);line-height:1.5;margin-bottom:10px">${k.aciklama}</div>
         <button onclick="yerlesikKitapAc('${k.dosya}','${k.tip}','${k.ad.replace(/'/g,"\\'")}')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:700;cursor:pointer">📖 Aç ve Oku</button>
       </div>`).join('')}
-    <div style="font-weight:700;color:var(--p);margin:18px 0 8px;font-size:1rem;border-top:2px solid var(--b);padding-top:14px">📂 Kendi Kitabını Aç</div>
-    <div style="font-size:0.82rem;color:var(--tm);margin-bottom:10px;line-height:1.5">
-      Diyanet veya başka kaynaktan indirdiğiniz <b>EPUB</b> veya <b>PDF</b> dosyalarını açıp okuyabilirsiniz. Dosya cihazınızda kalır.
-    </div>
-    <input type="file" id="kitapDosya" accept=".epub,.pdf,application/epub+zip,application/pdf" onchange="kitapAc(this)" style="display:none">
-    <button onclick="document.getElementById('kitapDosya').click()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;margin-bottom:10px">📂 Dosya Seç (EPUB / PDF)</button>
     <div id="kitapOkuyucu" style="margin-top:14px"></div>
     <div style="margin-top:18px;font-size:0.8rem;color:var(--tm);background:var(--bg);padding:12px;border-radius:10px;line-height:1.6">
-      <b>💡 Diyanet'ten kitap indirmek için:</b><br>
-      1) <a href="https://dijital.diyanet.gov.tr/Kitaplik" target="_blank" rel="noopener" style="color:var(--p)">Diyanet Dijital Kitaplık</a>'tan EPUB/PDF dosyasını indir.<br>
-      2) "📂 Dosya Seç" butonuna bas, dosyayı seç.<br>
-      3) Kitap aşağıda açılır.
+      <b>💡 Bilgi:</b> Daha fazla dini kitap için <a href="https://dijital.diyanet.gov.tr/Kitaplik" target="_blank" rel="noopener" style="color:var(--p)">Diyanet Dijital Kitaplık</a>'ı ziyaret edebilirsiniz.
     </div>`;
 }
 function yerlesikKitapAc(dosya, tip, ad) {
   const okuyucu = document.getElementById('kitapOkuyucu');
   if(!okuyucu) return;
-  // Dosya URL'i: site kök dizinindeki dosya
   const url = dosya;
   if(tip === 'epub'){
     okuyucu.innerHTML = `<div style="font-weight:700;color:var(--p);margin-bottom:8px">📗 ${ad}</div>
@@ -3020,7 +3011,8 @@ const OYUN_KATALOG = {
     {k:'hokey', ik:'🏒', ad:'Hava Hokeyi', ac:'Topu rakip kaleye at!'},
     {k:'15puzzle', ik:'🔢', ad:'Sayı Bulmaca', ac:'15 sayıyı sıraya diz!'},
     {k:'penalti', ik:'⚽', ad:'Penaltı Atışı', ac:'Topu kaleye gönder, gol at!'},
-    {k:'yaris', ik:'🏎️', ad:'Araba Yarışı', ac:'Engellerden kaç, uzağa git!'},
+    {k:'frikik', ik:'🥅', ad:'Frikik (Serbest Vuruş)', ac:'Duvarı aş, kaleciyi geç, gol at!'},
+    {k:'yaris', ik:'🏎️', ad:'Araba Yarışı', ac:'Direksiyonu çevir, sür!'},
     {k:'satranc', ik:'♟️', ad:'Satranç', ac:'2 kişi veya bilgisayara karşı!'},
   ]},
 };
@@ -3089,6 +3081,7 @@ function oyunBasla(oyun) {
   else if(oyun === 'penalti') penaltiBasla();
   else if(oyun === 'yaris') yarisBasla();
   else if(oyun === 'satranc') satrancBasla();
+  else if(oyun === 'frikik') frikikBasla();
 }
 
 function oyunGeriDon() { tamEkranKapat(); renderOyunlar(); }
@@ -5829,11 +5822,11 @@ const YARIS_RENKLER = ['#E53935','#1E88E5','#FB8C00','#8E24AA','#00ACC1'];
 function yarisBasla() {
   if(_yarisTimer) clearInterval(_yarisTimer);
   _yarisState = {
-    arabaX:0.5,
+    arabaX:0.5, hedefX:0.5,
     engeller:[],
     seritCizgi:0,
     skor:0, can:3, hiz:0.012, bitti:false, tik:0,
-    sersem:0  // çarpışma sonrası kısa dokunulmazlık
+    sersem:0, tilt:0
   };
   yarisGoster();
   _yarisTimer = setInterval(yarisAdim, 33);
@@ -5843,6 +5836,10 @@ function yarisAdim() {
   if(!st||st.bitti) return;
   st.tik++;
   if(st.sersem>0) st.sersem--;
+  // Yumuşak direksiyon: araba hedefe doğru kayar (sürüş hissi)
+  const fark = st.hedefX - st.arabaX;
+  st.arabaX += fark * 0.18;
+  st.tilt = Math.max(-1, Math.min(1, fark*8)); // eğim (-1..1)
   st.seritCizgi = (st.seritCizgi + st.hiz*1.5) % 0.12;
   st.engeller.forEach(e=> e.y += st.hiz);
   // Çarpışma: sadece sersem değilse
@@ -5852,9 +5849,9 @@ function yarisAdim() {
       if(!e.carpildi && Math.abs(e.x-ax)<aw && Math.abs(e.y-ay)<ah){
         e.carpildi=true;
         st.can--;
-        st.sersem=40; // ~1.3 sn dokunulmaz
+        st.sersem=40;
         Sound.play('tick');
-        notify(`💥 Çarpıştın! Can: ${st.can}`, st.can>0?'error':'error');
+        notify(`💥 Çarpıştın! Can: ${st.can}`, 'error');
         if(st.can<=0){
           st.bitti=true; clearInterval(_yarisTimer);
           if(st.skor>=10) cocukKutla('yaris');
@@ -5980,11 +5977,15 @@ function yarisCiz() {
   for(const e of st.engeller){
     parts+=yarisArabaSVG(e.renk, yolSol+e.x*yolGen, e.y*H, 44, 64, false);
   }
-  // Oyuncu arabası
-  parts+=yarisArabaSVG('#43A047', yolSol+st.arabaX*yolGen, 0.88*H, 46, 68, st.sersem>0);
+  // Oyuncu arabası (direksiyon eğimi ile)
+  const px = yolSol+st.arabaX*yolGen, py = 0.88*H;
+  const tiltAci = (st.tilt||0) * 8;
+  parts+=`<g transform="rotate(${tiltAci} ${px} ${py})">${yarisArabaSVG('#43A047', px, py, 46, 68, st.sersem>0)}</g>`;
   svg.innerHTML=parts;
   const sk=document.getElementById('yarisSkor'); if(sk) sk.textContent=st.skor;
   const cn=document.getElementById('yarisCan'); if(cn) cn.textContent='❤️'.repeat(Math.max(0,st.can));
+  // Hız göstergesi (km/h) — hıza orantılı
+  const hg=document.getElementById('yarisHiz'); if(hg) hg.textContent=Math.round(st.hiz*4000)+' km/s';
 }
 function yarisGoster() {
   const el = document.getElementById('oyunlarList');
@@ -6005,7 +6006,8 @@ function yarisGoster() {
       <div class="card-title" style="justify-content:center">🏎️ Araba Yarışı</div>
       ${tamEkranBtn()}
       <div style="display:flex;justify-content:space-around;font-weight:700;color:var(--p);margin-bottom:8px">
-        <span>🏁 Geçilen: <span id="yarisSkor">0</span></span>
+        <span>🏁 <span id="yarisSkor">0</span></span>
+        <span>🚀 <span id="yarisHiz">48 km/s</span></span>
         <span><span id="yarisCan">❤️❤️❤️</span></span>
       </div>
       <div id="yarisSaha" style="position:relative;width:100%;max-width:300px;margin:0 auto;touch-action:none;cursor:pointer">
@@ -6015,7 +6017,7 @@ function yarisGoster() {
         <button onmousedown="yarisBasTut(-1)" onmouseup="yarisBasBirak()" onmouseleave="yarisBasBirak()" ontouchstart="event.preventDefault();yarisBasTut(-1)" ontouchend="yarisBasBirak()" style="flex:1;max-width:120px;background:var(--p);color:#fff;border:none;padding:20px;border-radius:14px;font-size:1.5rem;font-weight:700;cursor:pointer;user-select:none">⬅️</button>
         <button onmousedown="yarisBasTut(1)" onmouseup="yarisBasBirak()" onmouseleave="yarisBasBirak()" ontouchstart="event.preventDefault();yarisBasTut(1)" ontouchend="yarisBasBirak()" style="flex:1;max-width:120px;background:var(--p);color:#fff;border:none;padding:20px;border-radius:14px;font-size:1.5rem;font-weight:700;cursor:pointer;user-select:none">➡️</button>
       </div>
-      <div style="font-size:0.78rem;color:var(--tm);margin-top:10px">3 canın var ❤️❤️❤️. Çarpınca bir can gider, ama oyun devam eder! Yola dokunup parmağını kaydırarak ya da ⬅️➡️ ile sür.</div>
+      <div style="font-size:0.78rem;color:var(--tm);margin-top:10px">🚗 Araban yumuşak döner (gerçek sürüş hissi). Parmağını yolda kaydır ya da ⬅️➡️ tuşlarını basılı tut. 3 canın var, hızlandıkça zorlaşır!</div>
     </div>`;
   yarisCiz();
   setTimeout(yarisKontrolBagla, 50);
@@ -6023,9 +6025,9 @@ function yarisGoster() {
 let _yarisBasTimer = null;
 function yarisBasTut(d){
   yarisBasBirak();
-  const ad=()=>{ const st=_yarisState; if(!st||st.bitti)return; st.arabaX=Math.max(0.08,Math.min(0.92,st.arabaX+d*0.04)); yarisCiz(); };
+  const ad=()=>{ const st=_yarisState; if(!st||st.bitti)return; st.hedefX=Math.max(0.08,Math.min(0.92,st.hedefX+d*0.05)); };
   ad();
-  _yarisBasTimer=setInterval(ad,60);
+  _yarisBasTimer=setInterval(ad,50);
 }
 function yarisBasBirak(){ if(_yarisBasTimer){ clearInterval(_yarisBasTimer); _yarisBasTimer=null; } }
 function yarisKontrolBagla(){
@@ -6036,8 +6038,7 @@ function yarisKontrolBagla(){
     const r=saha.getBoundingClientRect();
     const p = e.touches ? e.touches[0] : e;
     const x=(p.clientX-r.left)/r.width;
-    st.arabaX=Math.max(0.08,Math.min(0.92,x));
-    yarisCiz();
+    st.hedefX=Math.max(0.08,Math.min(0.92,x));
     if(e.cancelable) e.preventDefault();
   };
   saha.ontouchstart=hareket; saha.ontouchmove=hareket; saha.onpointermove=(e)=>{ if(e.pressure>0||e.buttons>0) hareket(e); };
@@ -6366,7 +6367,186 @@ function satrancBilgisayar() {
   }
 }
 
-
+// ---------- 🥅 OYUN 41: FRİKİK (Serbest Vuruş) ----------
+let _frikikState = null;
+let _frikikTimer = null;
+function frikikBasla() {
+  if(_frikikTimer) clearInterval(_frikikTimer);
+  _frikikState = { gol:0, atis:0, toplam:5, bitti:false, animasyon:false, faz:'nisan' };
+  frikikGoster();
+}
+function frikikGoster() {
+  const el = document.getElementById('oyunlarList');
+  const st = _frikikState;
+  if(st.bitti) {
+    el.innerHTML = `
+      <div onclick="frikikCik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:3rem">${st.gol>=3?'🏆':'🥅'}</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">${st.toplam} vuruştan ${st.gol} GOL!</div>
+        <div style="font-size:0.9rem;color:var(--tm);margin-bottom:10px">${st.gol>=4?'Harika bir frikikçisin! ⭐':st.gol>=3?'Çok iyi! 👏':'Biraz daha çalış! 💪'}</div>
+        <button onclick="frikikBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;margin-top:8px;cursor:pointer">🔄 Tekrar Oyna</button>
+      </div>`;
+    if(st.gol>=3) cocukKutla('frikik');
+    return;
+  }
+  el.innerHTML = `
+    <div onclick="frikikCik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">🥅 Frikik · Serbest Vuruş</div>
+      ${tamEkranBtn()}
+      <div style="font-weight:700;color:var(--p);margin-bottom:4px">Vuruş: ${Math.min(st.atis+1,st.toplam)}/${st.toplam} • Gol: ${st.gol} ⚽</div>
+      <div style="font-size:0.85rem;font-weight:700;color:#FF9800;margin-bottom:8px;min-height:20px" id="frikikDurum">🎯 Topa dokunup nişan al, bırak!</div>
+      <div id="frikikSaha" style="position:relative;width:100%;max-width:340px;margin:0 auto;cursor:pointer;touch-action:none">
+        <svg id="frikikSVG" viewBox="0 0 340 400" style="width:100%;height:auto;display:block;border-radius:12px"></svg>
+      </div>
+      <div id="frikikIpucu" style="font-size:0.8rem;color:var(--tm);margin:12px 0 0;line-height:1.5">
+        👆 Topu <b>parmağınla sürükle</b>: yukarı çekersen yükselir, sağa/sola çekersen o yöne <b>büküm</b> yapar. Duvarı aş, kaleciyi geç!
+      </div>
+    </div>`;
+  frikikCiz(50, 8, 50, null, null);
+  setTimeout(frikikKontrolBagla, 50);
+}
+// topX:0-100 yatay, topY:0-100 yükseklik (0=yerde, 100=kale çizgisi)
+function frikikCiz(topX, topY, kaleciX, hedefIz, donus) {
+  const svg = document.getElementById('frikikSVG');
+  if(!svg) return;
+  const W=340, H=400;
+  const kaleSol=W*0.18, kaleGen=W*0.64, kaleUst=H*0.13, kaleAlt=H*0.42;
+  const kalePx = kaleSol + (kaleciX/100)*kaleGen;
+  // Top: alttan (H*0.9) yukarı kaleye (kaleAlt civarı)
+  const tx = (topX/100)*W;
+  const ty = H*0.9 - (topY/100)*(H*0.9 - kaleUst - 10);
+  const topR = 13 - (topY/100)*6;
+  // Duvar (3 oyuncu) — saha ortasında
+  const duvarY = H*0.58;
+  const duvarX = W*0.5;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="frikGok" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#64B5F6"/><stop offset="100%" stop-color="#BBDEFB"/></linearGradient>
+      <radialGradient id="frikCim" cx="50%" cy="40%" r="90%"><stop offset="0%" stop-color="#66BB6A"/><stop offset="100%" stop-color="#2E7D32"/></radialGradient>
+    </defs>
+    <!-- Gökyüzü -->
+    <rect x="0" y="0" width="${W}" height="${H*0.16}" fill="url(#frikGok)"/>
+    <!-- Tribün -->
+    <rect x="0" y="${H*0.11}" width="${W}" height="${H*0.07}" fill="#455A64"/>
+    ${Array.from({length:50},(_,i)=>{const cx=(i*8)%W; const cy=H*0.115+(Math.floor(i/17)*5); const r=['#E53935','#1E88E5','#FDD835','#fff','#43A047'][i%5]; return `<rect x="${cx}" y="${cy}" width="4" height="3" fill="${r}" opacity="0.8"/>`;}).join('')}
+    <!-- Çim -->
+    <rect x="0" y="${H*0.16}" width="${W}" height="${H*0.84}" fill="url(#frikCim)"/>
+    ${Array.from({length:9},(_,i)=>`<rect x="0" y="${H*0.16+i*H*0.094}" width="${W}" height="${H*0.045}" fill="#43A047" opacity="0.18"/>`).join('')}
+    <!-- Kale -->
+    <rect x="${kaleSol-5}" y="${kaleUst}" width="6" height="${kaleAlt-kaleUst}" fill="#fff"/>
+    <rect x="${kaleSol+kaleGen-1}" y="${kaleUst}" width="6" height="${kaleAlt-kaleUst}" fill="#fff"/>
+    <rect x="${kaleSol-5}" y="${kaleUst-3}" width="${kaleGen+11}" height="6" fill="#fff"/>
+    <!-- File -->
+    ${Array.from({length:9},(_,i)=>`<line x1="${kaleSol+i*kaleGen/8}" y1="${kaleUst}" x2="${kaleSol+i*kaleGen/8}" y2="${kaleAlt}" stroke="#fff" stroke-width="0.6" opacity="0.5"/>`).join('')}
+    ${Array.from({length:5},(_,i)=>`<line x1="${kaleSol}" y1="${kaleUst+i*(kaleAlt-kaleUst)/4}" x2="${kaleSol+kaleGen}" y2="${kaleUst+i*(kaleAlt-kaleUst)/4}" stroke="#fff" stroke-width="0.6" opacity="0.5"/>`).join('')}
+    <!-- Kaleci -->
+    <g transform="translate(${kalePx},${kaleAlt-30})">
+      <ellipse cx="-22" cy="6" rx="7" ry="5" fill="#FFD54F" transform="rotate(-30 -22 6)"/>
+      <ellipse cx="22" cy="6" rx="7" ry="5" fill="#FFD54F" transform="rotate(30 22 6)"/>
+      <rect x="-12" y="2" width="24" height="28" rx="5" fill="#FF7043"/>
+      <rect x="-11" y="28" width="22" height="10" rx="2" fill="#212121"/>
+      <circle cx="0" cy="-6" r="8" fill="#FFE0B2"/>
+    </g>
+    <!-- Savunma duvarı (3 oyuncu) -->
+    ${[-28,0,28].map(dx=>`<g transform="translate(${duvarX+dx},${duvarY})">
+      <rect x="-9" y="0" width="18" height="34" rx="5" fill="#1E88E5"/>
+      <rect x="-9" y="0" width="18" height="5" fill="#1565C0"/>
+      <circle cx="0" cy="-8" r="7" fill="#FFE0B2"/>
+      <rect x="-9" y="34" width="7" height="12" rx="2" fill="#fff"/>
+      <rect x="2" y="34" width="7" height="12" rx="2" fill="#fff"/>
+      <!-- Eller önde (savunma) -->
+      <rect x="-11" y="14" width="5" height="12" rx="2" fill="#FFE0B2"/>
+      <rect x="6" y="14" width="5" height="12" rx="2" fill="#FFE0B2"/>
+    </g>`).join('')}
+    <!-- Top izi (nişan alırken) -->
+    ${hedefIz ? `<line x1="${(50/100)*W}" y1="${H*0.9}" x2="${hedefIz.x}" y2="${hedefIz.y}" stroke="#fff" stroke-width="2" stroke-dasharray="5 4" opacity="0.6"/>` : ''}
+    <!-- Top -->
+    <circle cx="${tx}" cy="${ty}" r="${topR}" fill="#fff" stroke="#212121" stroke-width="1.5"/>
+    <polygon points="${tx},${ty-topR*0.6} ${tx+topR*0.55},${ty-topR*0.18} ${tx+topR*0.35},${ty+topR*0.5} ${tx-topR*0.35},${ty+topR*0.5} ${tx-topR*0.55},${ty-topR*0.18}" fill="#212121"/>
+  `;
+}
+function frikikKontrolBagla() {
+  const saha = document.getElementById('frikikSaha');
+  if(!saha) return;
+  let basla = null;
+  const start = (e)=>{ const st=_frikikState; if(!st||st.animasyon)return; const p=e.touches?e.touches[0]:e; basla={x:p.clientX,y:p.clientY}; if(e.cancelable)e.preventDefault(); };
+  const move = (e)=>{
+    const st=_frikikState; if(!st||st.animasyon||!basla)return;
+    const p=e.touches?e.touches[0]:e;
+    const r=saha.getBoundingClientRect();
+    // İz göster
+    const hedefX = Math.max(10, Math.min(330, p.clientX - r.left));
+    const hedefY = Math.max(20, Math.min(360, p.clientY - r.top));
+    frikikCiz(50, 8, 50, {x:hedefX, y:hedefY}, null);
+    if(e.cancelable)e.preventDefault();
+  };
+  const end = (e)=>{
+    const st=_frikikState; if(!st||st.animasyon||!basla)return;
+    const p=e.changedTouches?e.changedTouches[0]:e;
+    const dx=p.clientX-basla.x, dy=p.clientY-basla.y;
+    basla=null;
+    if(dy>-25){ return; } // yeterince yukarı çekilmedi
+    const r=saha.getBoundingClientRect();
+    // Hedef X: yatay sürükleme → 20..80
+    let hedefX = 50 + (dx/r.width)*130;
+    hedefX = Math.max(18, Math.min(82, hedefX));
+    // Güç: ne kadar yukarı çekti
+    const guc = Math.min(1, Math.abs(dy)/(r.height*0.6));
+    // Büküm: yatay hareket
+    const donus = (dx/r.width)*40;
+    frikikVur(hedefX, guc, donus);
+    if(e.cancelable)e.preventDefault();
+  };
+  saha.ontouchstart=start; saha.ontouchmove=move; saha.ontouchend=end;
+  saha.onpointerdown=start; saha.onpointermove=(e)=>{ if(e.buttons>0) move(e); }; saha.onpointerup=end;
+}
+function frikikVur(hedefX, guc, donus) {
+  const st=_frikikState;
+  if(st.animasyon) return;
+  st.animasyon=true;
+  const durumEl=document.getElementById('frikikDurum'); if(durumEl) durumEl.textContent='⚽ Vuruş!';
+  // Kaleci rastgele bir tarafa atlar
+  const kaleciHedef = [25,50,75][Math.floor(Math.random()*3)];
+  // Topun yüksekliği yeterli mi (duvarı aşmalı): guc < 0.4 ise duvara takılır
+  const duvariAsti = guc > 0.38;
+  let t=0;
+  const baslangicX = 50;
+  const anim=setInterval(()=>{
+    t+=0.04;
+    if(t>=1){
+      clearInterval(anim);
+      // Büküm: parabolik yan hareket
+      const sonX = hedefX;
+      frikikCiz(sonX, 95, kaleciHedef, null, donus);
+      // Sonuç
+      let sonuc;
+      if(!duvariAsti){ sonuc='duvar'; }
+      else {
+        const golMu = Math.abs(sonX - kaleciHedef) > 18 && sonX>18 && sonX<82;
+        sonuc = golMu ? 'gol' : 'kurtardi';
+      }
+      setTimeout(()=>{
+        if(sonuc==='gol'){ st.gol++; notify('⚽ GOOOL! Müthiş frikik!','success'); }
+        else if(sonuc==='duvar'){ notify('🧱 Duvara takıldı! Daha yükseğe vur.','error'); }
+        else { notify('🧤 Kaleci kurtardı!','error'); }
+        st.atis++;
+        st.animasyon=false;
+        if(st.atis>=st.toplam) st.bitti=true;
+        frikikGoster();
+      }, 600);
+      return;
+    }
+    // Top yörüngesi: yукarı + büküm (yatay konumda parabolik sapma)
+    const curX = baslangicX + (hedefX-baslangicX)*t + donus*Math.sin(t*Math.PI)*0.5;
+    const curY = t*95;
+    // Kaleci topu takip etmeye geç sonra atlar
+    const curKaleci = 50 + (kaleciHedef-50)*Math.min(1, t*1.3);
+    frikikCiz(curX, curY, curKaleci, null, donus);
+  }, 35);
+}
+function frikikCik(){ if(_frikikTimer)clearInterval(_frikikTimer); oyunGeriDon(); }
 
 // ==================== ESMAÜL HÜSNA ====================
 const ESMA = [
