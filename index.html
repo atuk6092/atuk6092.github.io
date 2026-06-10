@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Teknik Envanter</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f0ee;--sur:#fff;--sur2:#f5f5f3;
+  --brd:#ddddd8;--brd2:#b0b0a8;
+  --tx:#1a1a18;--tx2:#505050;--tx3:#8a8a82;
+  --grn:#0b7a52;--grn-bg:#e4f5ee;--grn-dk:#085e3e;
+  --red:#b83030;--red-bg:#fceaea;
+  --blu:#1255a0;--blu-bg:#e5f0fb;--blu-bd:#a8c2ee;
+  --amb:#9a5e08;--amb-bg:#fdefd5;
+  --pur:#5e35b1;--pur-bg:#f0ebfd;
+  --gry:#555;--gry-bg:#f0f0ee;
+  --r:8px;--rsm:5px;--rlg:12px;
+}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--tx);font-size:15px;min-height:100vh}
+.app{display:grid;grid-template-columns:225px 1fr;min-height:100vh}
+/* Sidebar */
+.sb{background:var(--sur);border-right:1px solid var(--brd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-logo{padding:16px 15px 13px;border-bottom:1px solid var(--brd)}
+.sb-logo h1{font-size:15.5px;font-weight:700}
+.sb-logo p{font-size:12px;color:var(--tx3);margin-top:2px}
+.sb-sec{padding:10px 11px 3px;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3)}
+.sb-a{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:1px 6px;border-radius:var(--rsm);cursor:pointer;color:var(--tx2);font-size:13px;transition:background .1s}
+.sb-a:hover{background:var(--sur2);color:var(--tx)}
+.sb-a.on{background:var(--grn-bg);color:var(--grn-dk);font-weight:600}
+.sb-foot{margin-top:auto;padding:10px 13px;border-top:1px solid var(--brd);font-size:11px;color:var(--tx3);line-height:1.6}
+/* Main */
+.main{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--sur);border-bottom:1px solid var(--brd);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:700;flex:1}
+.topbar-acts{display:flex;gap:6px}
+.content{padding:15px 18px;overflow-y:auto;flex:1}
+.page{display:none}.page.on{display:block}
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.stat{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:11px 13px}
+.stat-l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);margin-bottom:3px}
+.stat-v{font-size:21px;font-weight:700;line-height:1}
+.stat-s{font-size:11px;color:var(--tx3);margin-top:2px}
+.cg{color:var(--grn)}.cr{color:var(--red)}.cb{color:var(--blu)}.ca{color:var(--amb)}
+/* Toolbar */
+.tb{display:flex;gap:6px;margin-bottom:11px;align-items:center;flex-wrap:wrap}
+.sw{position:relative;flex:1;min-width:220px;max-width:380px}
+.sw input{width:100%;padding:8px 11px 8px 34px;border:1px solid var(--brd);border-radius:var(--rsm);background:var(--sur);color:var(--tx);font-size:14.5px;outline:none;height:38px}
+.sw input:focus{border-color:var(--grn)}
+.sw span{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:15px;pointer-events:none}
+select{height:33px;padding:0 8px;border:1px solid var(--brd);border-radius:var(--rsm);background:var(--sur);color:var(--tx);font-size:13px;outline:none;cursor:pointer}
+select:focus{border-color:var(--grn)}
+.sp{flex:1}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;height:33px;padding:0 12px;border-radius:var(--rsm);font-size:13px;cursor:pointer;border:1px solid var(--brd);background:var(--sur);color:var(--tx);font-weight:500;transition:all .1s;white-space:nowrap;font-family:inherit}
+.btn:hover{background:var(--sur2);border-color:var(--brd2)}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--grn);color:#fff;border-color:var(--grn-dk)}
+.btn-p:hover{background:var(--grn-dk)}
+.btn-xl{background:#1e7e44;color:#fff;border-color:#155d31}
+.btn-xl:hover{background:#155d31}
+.btn-sm{height:26px;padding:0 8px;font-size:12px}
+.btn-del{color:var(--red);border-color:transparent;background:transparent}
+.btn-del:hover{background:var(--red-bg);border-color:#e8aaaa}
+.btn-ed{color:var(--blu);border-color:transparent;background:transparent}
+.btn-ed:hover{background:var(--blu-bg);border-color:var(--blu-bd)}
+.btn-warn{color:var(--amb);border-color:transparent;background:transparent}
+.btn-warn:hover{background:var(--amb-bg);border-color:#deb870}
+/* Toplu silme */
+.bulk-bar{display:none;align-items:center;gap:9px;background:var(--red-bg);border:1px solid #e0a0a0;border-radius:var(--rsm);padding:7px 13px;margin-bottom:11px;font-size:13px}
+.bulk-bar.show{display:flex}
+/* Table */
+.tw{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead tr{background:#ebebea}
+th{padding:8px 9px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3);border-bottom:1px solid var(--brd);white-space:nowrap;cursor:pointer;user-select:none}
+th.sorted{color:var(--grn)}
+th:hover{color:var(--tx)}
+td{padding:8px 9px;border-bottom:1px solid var(--brd);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(odd){background:#ffffff}
+tbody tr:nth-child(even){background:#eef8f3}
+tbody tr:hover{background:#d0eddf !important}
+.td-r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.td-red{color:var(--red);font-weight:700}
+.td-acts{display:flex;gap:2px;justify-content:flex-end}
+
+.empty{padding:40px;text-align:center;color:var(--tx3);font-size:14px}
+/* Pills */
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--grn-bg);color:var(--grn-dk)}
+.p-low{background:var(--amb-bg);color:var(--amb)}
+.p-out{background:var(--red-bg);color:var(--red)}
+.p-ns{background:#f0f0ee;color:var(--tx3)}
+.p-one{background:var(--pur-bg);color:var(--pur)}
+/* Kat chips */
+.kc{font-size:11.5px;padding:2px 7px;border-radius:20px;font-weight:600;white-space:nowrap}
+/* Hareket log */
+.lt{width:100%;border-collapse:collapse;font-size:13.5px}
+.lt th{padding:8px 9px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3);border-bottom:1px solid var(--brd);background:#ebebea;white-space:nowrap}
+.lt td{padding:8px 9px;border-bottom:1px solid var(--brd)}
+.lt tr:nth-child(odd) td{background:#fff}
+.lt tr:nth-child(even) td{background:#eef8f3}
+.lt tr:hover td{background:#d0eddf !important}
+.lt tr:last-child td{border-bottom:none}
+.bh-c{background:var(--red-bg);color:var(--red);padding:2px 7px;border-radius:20px;font-size:11.5px;font-weight:600}
+.bh-g{background:var(--grn-bg);color:var(--grn-dk);padding:2px 7px;border-radius:20px;font-size:11.5px;font-weight:600}
+.bh-d{background:#f0f0ee;color:var(--tx2);padding:2px 7px;border-radius:20px;font-size:11.5px;font-weight:600}
+/* Modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000}
+.ov.on{display:flex}
+.modal{background:var(--sur);border-radius:var(--rlg);box-shadow:0 20px 60px rgba(0,0,0,.2);width:580px;max-width:97vw;max-height:93vh;display:flex;flex-direction:column}
+.modal-sm{width:460px}
+.modal-xs{width:370px}
+.mh{padding:16px 20px 13px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mh h3{font-size:15px;font-weight:700}
+.mx{width:26px;height:26px;border-radius:50%;border:none;background:none;cursor:pointer;font-size:17px;color:var(--tx2);display:flex;align-items:center;justify-content:center}
+.mx:hover{background:var(--sur2)}
+.mb{padding:16px 20px;overflow-y:auto;flex:1}
+.mf{padding:13px 20px;border-top:1px solid var(--brd);display:flex;gap:7px;justify-content:flex-end;flex-shrink:0}
+.f{margin-bottom:12px}
+.f label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tx2);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;height:35px;padding:0 10px;border:1px solid var(--brd);border-radius:var(--rsm);background:var(--sur);color:var(--tx);font-size:14px;font-family:inherit;outline:none;transition:border .1s}
+.f input:focus,.f select:focus{border-color:var(--grn);box-shadow:0 0 0 3px rgba(11,122,82,.1)}
+.f textarea{height:55px;padding:7px 10px;resize:vertical}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--tx3);padding:12px 0 8px;border-bottom:1px solid var(--brd);margin-bottom:12px}
+.fhint{font-size:11px;color:var(--tx3);margin-top:3px}
+.note{background:var(--amb-bg);border:1px solid #deb870;border-radius:var(--rsm);padding:8px 10px;font-size:12px;color:var(--amb);margin-bottom:12px}
+.info-box{background:var(--blu-bg);border:1px solid var(--blu-bd);border-radius:var(--rsm);padding:8px 11px;font-size:12.5px;color:var(--blu);margin-bottom:12px}
+/* Hareket tip */
+.ht-g{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px}
+.ht-b{padding:9px 5px;border:1.5px solid var(--brd);border-radius:var(--rsm);cursor:pointer;text-align:center;transition:all .1s;background:var(--sur);font-family:inherit}
+.ht-b:hover{border-color:var(--brd2)}
+.ht-b.sc{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+.ht-b.sg{border-color:var(--grn);background:var(--grn-bg);color:var(--grn-dk)}
+.ht-b.sd{border-color:var(--amb);background:var(--amb-bg);color:var(--amb)}
+.ht-i{font-size:17px}.ht-l{font-size:11.5px;font-weight:700;margin-top:3px}
+/* Durum seçimi - radyo butonlar */
+.dur-g{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+.dur-b{padding:8px 10px;border:1.5px solid var(--brd);border-radius:var(--rsm);cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .1s;font-size:13px}
+.dur-b:hover{border-color:var(--brd2);background:var(--sur2)}
+.dur-b.sel-ok{border-color:var(--grn);background:var(--grn-bg)}
+.dur-b.sel-low{border-color:var(--amb);background:var(--amb-bg)}
+.dur-b.sel-out{border-color:var(--red);background:var(--red-bg)}
+.dur-b.sel-one{border-color:var(--pur);background:var(--pur-bg)}
+.dur-radio{width:15px;height:15px;border-radius:50%;border:2px solid var(--brd2);flex-shrink:0;transition:all .1s}
+.dur-b.sel-ok .dur-radio{background:var(--grn);border-color:var(--grn)}
+.dur-b.sel-low .dur-radio{background:var(--amb);border-color:var(--amb)}
+.dur-b.sel-out .dur-radio{background:var(--red);border-color:var(--red)}
+.dur-b.sel-one .dur-radio{background:var(--pur);border-color:var(--pur)}
+/* Taşıma modal */
+.tasima-info{background:var(--grn-bg);border:1px solid #a0d0b8;border-radius:var(--rsm);padding:9px 11px;font-size:13px;color:var(--grn-dk);margin-bottom:12px}
+/* Dolap sayfası */
+.dolap-list{display:flex;flex-direction:column;gap:9px}
+.dolap-row{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:grab}
+.dolap-row:active{cursor:grabbing}
+.dolap-row.drag-over{border-color:var(--grn);background:var(--grn-bg)}
+.dolap-drag-handle{color:var(--tx3);font-size:18px;flex-shrink:0;user-select:none}
+.dolap-info{flex:1}
+.dolap-title{font-weight:700;font-size:14px}
+.dolap-sub{font-size:12px;color:var(--tx2);margin-top:2px}
+.dolap-bolmeler{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.dolap-sp{font-size:11px;background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu-bd);border-radius:4px;padding:2px 7px}
+.dolap-acts{display:flex;gap:5px;flex-shrink:0}
+/* Konfirm */
+.konf{background:var(--sur);border-radius:var(--rlg);box-shadow:0 20px 60px rgba(0,0,0,.2);width:360px;max-width:95vw;padding:24px}
+.konf h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.konf p{font-size:13px;color:var(--tx2);margin-bottom:18px;line-height:1.5}
+.konf-acts{display:flex;gap:7px;justify-content:flex-end}
+/* Sıra no badge */
+.sira-badge{display:inline-block;background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu-bd);border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px}
+/* Toast */
+#toast{position:fixed;bottom:22px;right:22px;background:#1c1c1a;color:#fff;padding:8px 15px;border-radius:var(--rsm);font-size:13px;opacity:0;transform:translateY(8px);transition:all .22s;z-index:9999;pointer-events:none;max-width:280px}
+#toast.on{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px}
+
+.topbar-user{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;border:1px solid var(--brd);cursor:pointer;font-size:13px;color:var(--tx2)}
+.topbar-user:hover{background:var(--sur2)}
+.user-card{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.u-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;flex-shrink:0}
+.u-info{flex:1}.u-name{font-size:14px;font-weight:700}.u-sub{font-size:12px;color:var(--tx3);margin-top:2px}
+.u-acts{display:flex;gap:5px;flex-wrap:wrap}
+.rol-admin{background:#e4f5ee;color:#085e3e;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-left:8px}
+.rol-teknik{background:#e5f0fb;color:#1255a0;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-left:8px}
+.rol-izleyici{background:#fdefd5;color:#9a5e08;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-left:8px}
+.pasif-badge{background:#fceaea;color:#b83030;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-left:6px}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:76px!important}
+.pw-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:1px solid #ddd;cursor:pointer;font-size:11px;border-radius:4px;padding:3px 7px;color:#555;font-family:inherit}
+.lg-box{background:#fff;border-radius:14px;padding:38px 42px;width:370px;max-width:95vw;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.lg-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#555;margin-bottom:5px}
+.lg-input{width:100%;height:42px;padding:0 13px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none;background:#fafafa}
+.lg-input:focus{border-color:#0b7a52}
+.lg-btn{width:100%;height:44px;background:#0b7a52;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.lg-btn:hover{background:#085e3e}
+.lg-btn2{width:100%;height:44px;background:#fff;color:#0b7a52;border:2px solid #0b7a52;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.lg-btn2:hover{background:#e4f5ee}
+.lg-err{display:none;background:#fceaea;color:#b83030;border:1px solid #e0aaaa;border-radius:7px;padding:9px 12px;font-size:13px;margin-bottom:13px}
+.lg-ok{display:none;background:#e4f5ee;color:#085e3e;border:1px solid #a0d0b8;border-radius:7px;padding:9px 12px;font-size:13px;margin-bottom:13px}
+.lg-pw{position:relative;margin-bottom:13px}
+.lg-pw input{width:100%;height:42px;padding:0 80px 0 13px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none;background:#fafafa}
+.lg-pw input:focus{border-color:#0b7a52}
+.lg-pw button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:1px solid #ddd;cursor:pointer;font-size:11px;border-radius:4px;padding:3px 7px;color:#555;font-family:inherit}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div id="sb-loading" style="position:fixed;inset:0;background:linear-gradient(135deg,#0b7a52,#1255a0);display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="text-align:center;color:#fff">
+    <div style="font-size:50px;margin-bottom:16px">&#128230;</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">Teknik Envanter</div>
+    <div style="font-size:14px;opacity:.8;margin-bottom:24px">Bulut verileri yukleniyor...</div>
+    <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top:3px solid #fff;border-radius:50%;animation:sbspin 1s linear infinite;margin:0 auto"></div>
+  </div>
+</div>
+<style>@keyframes sbspin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+
+<div id="lg-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#0b7a52,#1255a0);display:flex;align-items:center;justify-content:center;z-index:9000">
+  <div class="lg-box">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:44px">&#128230;</div>
+      <div style="font-size:20px;font-weight:800;margin-top:8px;color:#1a1a18">Teknik Envanter</div>
+      <div style="font-size:13px;color:#888;margin-top:3px">Stok Takip Sistemi</div>
+    </div>
+    <div class="lg-err" id="lg-err"></div>
+    <div class="lg-ok" id="lg-ok"></div>
+    <div style="margin-bottom:13px">
+      <label class="lg-label">Kullanici Adi</label>
+      <input id="lg-u" class="lg-input" type="text" autocomplete="off" spellcheck="false" placeholder="Kullanici adiniz" onkeydown="if(event.key==='Enter')document.getElementById('lg-p').focus()">
+    </div>
+    <div class="lg-pw">
+      <label class="lg-label">Sifre</label>
+      <input id="lg-p" type="password" autocomplete="off" placeholder="Sifreniz" onkeydown="if(event.key==='Enter')lgGiris()">
+      <button type="button" onclick="var i=document.getElementById('lg-p');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'Goster':'Gizle'">Goster</button>
+    </div>
+    <button class="lg-btn" onclick="lgGiris()">Giris Yap</button>
+    <button class="lg-btn2" onclick="lgKayitAc()">Hesap Olustur / Kayit Ol</button>
+  </div>
+</div>
+<div id="kayit-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#0b7a52,#1255a0);display:none;align-items:center;justify-content:center;z-index:9000;overflow-y:auto;padding:20px 0">
+  <div class="lg-box">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:36px">&#128101;</div>
+      <div style="font-size:18px;font-weight:800;margin-top:6px;color:#1a1a18">Yeni Hesap Olustur</div>
+    </div>
+    <div class="lg-err" id="kayit-err"></div>
+    <div style="margin-bottom:11px">
+      <label class="lg-label">Kullanici Adi * <span style="font-weight:400;color:#888">(kucuk harf)</span></label>
+      <input id="kayit-id" class="lg-input" type="text" autocomplete="off" placeholder="ornek: ahmet.yilmaz" onkeydown="if(event.key==='Enter')document.getElementById('kayit-em').focus()">
+    </div>
+    <div style="margin-bottom:11px">
+      <label class="lg-label">E-posta <span style="font-weight:400;color:#888">(opsiyonel)</span></label>
+      <input id="kayit-em" class="lg-input" type="email" autocomplete="off" placeholder="ornek@mail.com" onkeydown="if(event.key==='Enter')document.getElementById('kayit-s1').focus()">
+    </div>
+    <div class="lg-pw">
+      <label class="lg-label">Sifre *</label>
+      <input id="kayit-s1" type="password" autocomplete="new-password" placeholder="En az 4 karakter" onkeydown="if(event.key==='Enter')document.getElementById('kayit-s2').focus()">
+      <button type="button" onclick="var i=document.getElementById('kayit-s1');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'Goster':'Gizle'">Goster</button>
+    </div>
+    <div class="lg-pw">
+      <label class="lg-label">Sifre Tekrar *</label>
+      <input id="kayit-s2" type="password" autocomplete="new-password" placeholder="Sifreyi tekrar girin" onkeydown="if(event.key==='Enter')lgKayitOl()">
+      <button type="button" onclick="var i=document.getElementById('kayit-s2');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'Goster':'Gizle'">Goster</button>
+    </div>
+    <button class="lg-btn" onclick="lgKayitOl()">Kayit Ol</button>
+    <button class="lg-btn2" onclick="lgGirisGeri()">Girise Don</button>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+<aside class="sb">
+  <div class="sb-logo"><h1>📦 Teknik Envanter</h1><p>Stok Takip Sistemi</p></div>
+  <div class="sb-sec">Sayfalar</div>
+  <div class="sb-a on" onclick="showPage('stok')" id="nav-stok">📋 Ürün Listesi</div>
+  <div class="sb-a" onclick="showPage('har')" id="nav-har">🔄 Hareket Geçmişi</div>
+  <div class="sb-a" onclick="showPage('dolap')" id="nav-dolap">🗄 Dolap &amp; Bölme</div>
+  <div class="sb-a" onclick="showPage('kullanici')" id="nav-ku" style="display:none">👥 Kullanıcılar</div>
+  <div class="sb-sec">Araçlar</div>
+  <div class="sb-a" onclick="exportExcel()">📊 Excel'e Aktar</div>
+  <div class="sb-a" onclick="triggerImport()">📥 Excel'den Aktar</div>
+  <div class="sb-a" onclick="yedekle()">💾 Yedek Al (JSON)</div>
+  <div class="sb-a" onclick="geriYukle()">🔁 Yedeği Geri Yükle</div>
+  <div class="sb-foot" id="db-stat">Yükleniyor...</div>
+</aside>
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="page-title">Ürün Listesi</span>
+    <div style="position:relative;display:inline-block;margin-right:8px">
+      <button onclick="bildirimAc()" title="Stok uyarilari" style="background:none;border:1px solid var(--brd);border-radius:8px;width:38px;height:34px;cursor:pointer;font-size:17px;position:relative">🔔<span id="bell-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#b83030;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px">0</span></button>
+      <div id="bell-box" style="display:none;position:absolute;top:42px;right:0;width:330px;max-width:90vw;background:var(--sur);border:1px solid var(--brd);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.18);z-index:500;overflow:hidden"></div>
+    </div>
+    <div id="tu-wrap"></div>
+    <div class="topbar-acts">
+      <button class="btn" onclick="sbYenile()" title="Buluttan guncel verileri cek">🔄 Yenile</button>
+      <button class="btn btn-xl" onclick="exportExcel()">📊 Excel</button>
+      <button class="btn btn-p" id="btn-yeni" onclick="openUrunModal()">+ Yeni Ürün</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- STOK -->
+    <div class="page on" id="page-stok">
+      <div class="stats">
+        <div class="stat"><div class="stat-l">Ürün Çeşidi</div><div class="stat-v" id="s-c">0</div><div class="stat-s">kayıtlı</div></div>
+        <div class="stat"><div class="stat-l">Toplam Mevcut</div><div class="stat-v cb" id="s-m">0</div><div class="stat-s">birim</div></div>
+        <div class="stat"><div class="stat-l">Toplam Çıkan</div><div class="stat-v ca" id="s-k">0</div><div class="stat-s">birim</div></div>
+        <div class="stat"><div class="stat-l">Toplam Kalan</div><div class="stat-v cg" id="s-ka">0</div><div class="stat-s">birim</div></div>
+      </div>
+      <div class="bulk-bar" id="bulk-bar">
+        <span id="bulk-info">0 ürün seçildi</span>
+        <button class="btn btn-del" onclick="bulkSil()">🗑 Seçilenleri Sil</button>
+        <button class="btn" onclick="secimIptal()">✕ İptal</button>
+      </div>
+      <div class="tb">
+        <div class="sw"><span>🔍</span><input id="search" placeholder="Ürün, marka, dolap..." oninput="renderStok()"></div>
+        <select id="flt-d" onchange="renderStok()"><option value="">Tüm Dolaplar</option></select>
+        <select id="flt-k" onchange="renderStok()"><option value="">Tüm Kategoriler</option></select>
+        <select id="flt-dur" onchange="renderStok()">
+          <option value="">Tüm Durumlar</option>
+          <option value="ok">Yeterli</option>
+          <option value="low">Kritik</option>
+          <option value="out">Tükendi</option>
+          <option value="one">Önemsiz</option>
+        </select>
+        <div class="sp"></div>
+        <button class="btn" onclick="openHarModal(null)">📤 Stok Hareketi</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th style="width:34px"><input type="checkbox" id="chk-all" onclick="toggleAll(this)" title="Tümünü seç"></th>
+            
+            <th onclick="setSort('ad')" id="th-ad">ÜRÜN ADI<span id="arr-ad"></span></th>
+            <th onclick="setSort('marka')" id="th-marka">MARKA / MODEL / ÖZELİK<span id="arr-marka"></span></th>
+            <th>BİRİM</th>
+            <th>KATEGORİ</th>
+            <th class="td-r" onclick="setSort('mevcut')" id="th-mevcut">MEVCUT<span id="arr-mevcut"></span></th>
+            <th class="td-r">ÇIKAN</th>
+            <th class="td-r" onclick="setSort('kalan')" id="th-kalan">KALAN<span id="arr-kalan"></span></th>
+            <th onclick="setSort('dolap')" id="th-dolap">DOLAP NO<span id="arr-dolap"></span></th>
+            <th>BÖLME NO</th>
+            <th>DURUM</th>
+            <th style="text-align:right">İŞLEM</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="empty" class="empty" style="display:none">📭 Ürün bulunamadı.</div>
+      </div>
+    </div>
+
+    <!-- HAREKETLER -->
+    <div class="page" id="page-har">
+      <div class="tb">
+        <div class="sw"><span>🔍</span><input id="hs" placeholder="Ürün ara..." oninput="renderHar()"></div>
+        <select id="hft" onchange="renderHar()">
+          <option value="">Tüm Hareketler</option>
+          <option value="cikan">Çıkış</option>
+          <option value="giris">Giriş</option>
+          <option value="duzeltme">Düzeltme</option>
+        </select>
+        <div class="sp"></div>
+        <button class="btn btn-p" onclick="openHarModal(null)">+ Yeni Hareket</button>
+      </div>
+      <div class="tw">
+        <table class="lt">
+          <thead><tr>
+            <th>TARİH</th><th>ÜRÜN</th><th>DOLAP / BÖLME</th>
+            <th>TİP</th><th style="text-align:right">MİKTAR</th>
+            <th>AÇIKLAMA</th><th>YAPAN</th><th style="text-align:right">İŞLEM</th>
+          </tr></thead>
+          <tbody id="har-tbody"></tbody>
+        </table>
+        <div id="har-empty" class="empty" style="display:none">📋 Hareket kaydı yok.</div>
+      </div>
+    </div>
+
+        <div class="page" id="page-kullanici">
+      <div class="tb"><button class="btn btn-p" onclick="openYeniK()">+ Yeni Kullanici Ekle</button></div>
+      <div id="k-liste"></div>
+    </div>
+
+    <!-- DOLAPLAR -->
+    <div class="page" id="page-dolap">
+      <div class="tb">
+        <button class="btn btn-p" onclick="openDolapModal()">+ Yeni Dolap Ekle</button>
+        <span style="font-size:12.5px;color:var(--tx3);margin-left:7px">⠿ Sürükle-bırak ile sırayı değiştirebilirsiniz</span>
+      </div>
+      <div class="dolap-list" id="dolap-list"></div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- ÜRÜN MODAL -->
+<div class="ov" id="m-u"><div class="modal">
+  <div class="mh"><h3 id="m-u-t">Yeni Ürün</h3><button class="mx" onclick="CM('m-u')">×</button></div>
+  <div class="mb">
+    
+    <div class="sec">Ürün Bilgileri</div>
+    <div class="f"><label>Ürün Adı *</label><input id="fu-ad" placeholder="Ör: Wifi 6 Adaptör"></div>
+    <div class="f"><label>Marka / Model / Özelik</label><textarea id="fu-marka" placeholder="Ör: TPLİNK, USB 3.0"></textarea></div>
+    <div class="fg2">
+      <div class="f"><label>Birim</label><select id="fu-birim">
+        <option>Adet</option><option>Kutu</option><option>Paket</option><option>Kg</option><option>Lt</option><option>Metre</option><option>Takım</option>
+      </select></div>
+      <div class="f"><label>Kategori</label><select id="fu-kat">
+        <option>Elektronik</option><option>Ağ &amp; İletişim</option><option>Kablo &amp; Bağlantı</option>
+        <option>Araç-Gereç</option><option>Sarf Malzeme</option><option>Güvenlik &amp; KKD</option>
+        <option>Kırtasiye</option><option>Temizlik</option><option>Diğer</option>
+      </select></div>
+    </div>
+    <div class="sec">Stok</div>
+    <div class="fg3">
+      <div class="f"><label>Mevcut Stok</label><input id="fu-mevcut" type="number" min="0" placeholder="0"></div>
+      <div class="f"><label>Çıkan</label><input id="fu-cikan" type="number" min="0" placeholder="0"></div>
+      <div class="f"><label>Kritik Eşik</label><input id="fu-min" type="number" min="0" placeholder="0"><div class="fhint">Bu altı = Kritik</div></div>
+    </div>
+    <div class="sec">Stok Durumu</div>
+    <div class="f">
+      <label>Durum Tipi</label>
+      <div class="dur-g">
+        <div class="dur-b sel-ok" id="dur-ok" onclick="selDur('normal')"><div class="dur-radio"></div><span>🟢 Yeterli (Otomatik)</span></div>
+        <div class="dur-b" id="dur-low" onclick="selDur('kritik')"><div class="dur-radio"></div><span>🟡 Kritik</span></div>
+        <div class="dur-b" id="dur-out" onclick="selDur('tuikendi')"><div class="dur-radio"></div><span>🔴 Tükendi</span></div>
+        <div class="dur-b" id="dur-one" onclick="selDur('onemsiz')"><div class="dur-radio"></div><span>⚪ Önemsiz</span></div>
+      </div>
+      <div class="fhint" style="margin-top:6px">"Otomatik" seçilirse stok miktarına göre hesaplanır. Diğerleri manuel override yapar.</div>
+    </div>
+    <div class="sec">Konum</div>
+    <div class="fg2">
+      <div class="f"><label>Dolap No</label><select id="fu-dolap" onchange="onDC()"><option value="">— Seçiniz —</option></select></div>
+      <div class="f"><label>Bölme No</label><select id="fu-bolme"><option value="">— Seçiniz —</option></select></div>
+    </div>
+    <div class="f"><label>Ek Konum Notu</label><input id="fu-loknot" placeholder="Ör: Sol köşe"></div>
+    <div class="sec">Diğer</div>
+    <div class="fg2">
+      <div class="f"><label>Barkod/SKU</label><input id="fu-sku" placeholder=""></div>
+      <div class="f"><label>Tedarikçi</label><input id="fu-ted" placeholder=""></div>
+    </div>
+    <div class="f"><label>Notlar</label><textarea id="fu-not" placeholder=""></textarea></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-u')">İptal</button><button class="btn btn-p" onclick="saveUrun()">💾 Kaydet</button></div>
+</div></div>
+
+<!-- TAŞIMA MODAL -->
+<div class="ov" id="m-t"><div class="modal modal-sm">
+  <div class="mh"><h3>Ürünü Taşı</h3><button class="mx" onclick="CM('m-t')">×</button></div>
+  <div class="mb">
+    <div class="tasima-info" id="tasima-info"></div>
+    <div class="f"><label>Hedef Dolap</label><select id="tf-dolap" onchange="onTC()"><option value="">— Seçiniz —</option></select></div>
+    <div class="f"><label>Hedef Bölme</label><select id="tf-bolme"><option value="">— Önce dolap seçin —</option></select></div>
+    <div class="f"><label>Konum Notu (opsiyonel)</label><input id="tf-not" placeholder="Ör: Sol bölme"></div>
+    <div class="note" id="tasima-sira-note" style="display:none"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-t')">İptal</button><button class="btn btn-p" onclick="saveTasima()">📦 Taşı</button></div>
+</div></div>
+
+<!-- HAREKET MODAL -->
+<div class="ov" id="m-h"><div class="modal modal-sm">
+  <div class="mh"><h3>Stok Hareketi</h3><button class="mx" onclick="CM('m-h')">×</button></div>
+  <div class="mb">
+    <div class="f"><label>Ürün *</label><select id="hf-u"><option value="">— Ürün seçin —</option></select></div>
+    <div class="ht-g">
+      <div class="ht-b sc" id="ht-c" onclick="sHT('cikan')"><div class="ht-i">📤</div><div class="ht-l">Çıkış</div></div>
+      <div class="ht-b" id="ht-g" onclick="sHT('giris')"><div class="ht-i">📥</div><div class="ht-l">Giriş</div></div>
+      <div class="ht-b" id="ht-d" onclick="sHT('duzeltme')"><div class="ht-i">🔧</div><div class="ht-l">Düzeltme</div></div>
+    </div>
+    <input type="hidden" id="hf-tip" value="cikan">
+    <div id="duz-note" style="display:none" class="note">Düzeltme: Kalan stoğu yeni değere ayarlar.</div>
+    <div class="fg2">
+      <div class="f"><label id="hf-ml">Miktar *</label><input id="hf-mik" type="number" min="0" placeholder="0"></div>
+      <div class="f"><label>Tarih</label><input id="hf-tar" type="date"></div>
+    </div>
+    <div class="f"><label>Açıklama</label><input id="hf-ac" placeholder=""></div>
+    <div class="f"><label>Yapan Kişi</label><input id="hf-yp" placeholder=""></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-h')">İptal</button><button class="btn btn-p" onclick="saveHar()">✅ Kaydet</button></div>
+</div></div>
+
+<!-- HAREKET DÜZENLE -->
+<div class="ov" id="m-he"><div class="modal modal-sm">
+  <div class="mh"><h3>Hareketi Düzenle</h3><button class="mx" onclick="CM('m-he')">×</button></div>
+  <div class="mb">
+    <div class="note">Stok değerleri otomatik yeniden hesaplanır.</div>
+    <div class="f"><label>Tip</label><select id="hef-tip"><option value="cikan">Çıkış</option><option value="giris">Giriş</option><option value="duzeltme">Düzeltme</option></select></div>
+    <div class="fg2">
+      <div class="f"><label>Miktar *</label><input id="hef-mik" type="number" min="0" placeholder="0"></div>
+      <div class="f"><label>Tarih</label><input id="hef-tar" type="date"></div>
+    </div>
+    <div class="f"><label>Açıklama</label><input id="hef-ac" placeholder=""></div>
+    <div class="f"><label>Yapan</label><input id="hef-yp" placeholder=""></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-he')">İptal</button><button class="btn btn-p" onclick="saveHarEdit()">💾 Güncelle</button></div>
+</div></div>
+
+<!-- DOLAP MODAL -->
+<div class="ov" id="m-d"><div class="modal modal-sm">
+  <div class="mh"><h3 id="m-d-t">Dolap Ekle</h3><button class="mx" onclick="CM('m-d')">×</button></div>
+  <div class="mb">
+    <div class="f"><label>Dolap Adı *</label><input id="df-ad" placeholder="Ör: Teknik Dolap 07"></div>
+    <div class="f"><label>Bölme Adları (virgülle, tam 5 adet)</label>
+      <input id="df-bol" placeholder="1. Raf, 2. Raf, 3. Raf, 4. Raf, 5. Raf">
+      <div class="fhint">Boş bırakırsanız 5 raf otomatik oluşturulur</div>
+    </div>
+    <div class="f"><label>Açıklama</label><input id="df-ac" placeholder=""></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-d')">İptal</button><button class="btn btn-p" onclick="saveDolap()">💾 Kaydet</button></div>
+</div></div>
+
+<!-- DOLAP DÜZENLE -->
+<div class="ov" id="m-de"><div class="modal modal-sm">
+  <div class="mh"><h3>Dolabı Düzenle</h3><button class="mx" onclick="CM('m-de')">×</button></div>
+  <div class="mb">
+    <div class="f"><label>Dolap Adı *</label><input id="def-ad" placeholder=""></div>
+    <div class="f"><label>Bölme Adları (virgülle, 5 adet)</label>
+      <input id="def-bol" placeholder="1. Raf, 2. Raf, 3. Raf, 4. Raf, 5. Raf">
+    </div>
+    <div class="f"><label>Açıklama</label><input id="def-ac" placeholder=""></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-de')">İptal</button><button class="btn btn-p" onclick="saveDolapEdit()">💾 Güncelle</button></div>
+</div></div>
+
+<div class="ov" id="m-ku"><div class="modal modal-sm">
+  <div class="mh"><h3 id="m-ku-t">Kullanici</h3><button class="mx" onclick="CM('m-ku');document.getElementById('ku-rol').disabled=false;document.getElementById('ku-aktif').disabled=false;">&#215;</button></div>
+  <div class="mb">
+    <div class="f"><label>Ad Soyad *</label><input id="ku-ad" placeholder="Ad Soyad"></div>
+    <div class="f"><label>Kullanici Adi</label><input id="ku-id" placeholder="kucuk harf bosluksuz" autocomplete="off"></div>
+    <div class="f"><label>Rol</label><select id="ku-rol">
+      <option value="admin">Yonetici (Tam Yetki)</option>
+      <option value="teknik" selected>Teknik Personel</option>
+      <option value="izleyici">Izleyici (Sadece Goruntule)</option>
+    </select></div>
+    <div class="f"><label>Durum</label><select id="ku-aktif">
+      <option value="true">Aktif</option>
+      <option value="false">Pasif (Giris Yapamaz)</option>
+    </select></div>
+    <div class="f"><label>Renk</label><select id="ku-renk">
+      <option value="#0b7a52">Yesil</option><option value="#1255a0">Mavi</option>
+      <option value="#9a5e08">Turuncu</option><option value="#b83030">Kirmizi</option>
+      <option value="#5e35b1">Mor</option>
+    </select></div>
+    <div class="f"><label>E-posta</label><input type="email" id="ku-em" placeholder="ornek@mail.com"></div>
+    <div id="ku-sw">
+      <div class="f"><label>Sifre *</label>
+        <div class="pw-wrap"><input type="password" id="ku-s1" placeholder="En az 4 karakter">
+        <button class="pw-btn" type="button" onclick="epT('ku-s1',this)">Goster</button></div>
+      </div>
+      <div class="f"><label>Sifre Tekrar *</label>
+        <div class="pw-wrap"><input type="password" id="ku-s2" placeholder="Tekrar girin">
+        <button class="pw-btn" type="button" onclick="epT('ku-s2',this)">Goster</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-ku');document.getElementById('ku-rol').disabled=false;document.getElementById('ku-aktif').disabled=false;">Iptal</button><button class="btn btn-p" onclick="saveK()">Kaydet</button></div>
+</div></div>
+<div class="ov" id="m-sd"><div class="modal modal-sm">
+  <div class="mh"><h3 id="sd-bas">Sifre Degistir</h3><button class="mx" onclick="CM('m-sd')">&#215;</button></div>
+  <div class="mb">
+    <div class="f" id="sd-er"><label>Mevcut Sifre</label>
+      <div class="pw-wrap"><input type="password" id="sd-e" placeholder="Mevcut sifreniz">
+      <button class="pw-btn" type="button" onclick="epT('sd-e',this)">Goster</button></div>
+    </div>
+    <div class="f"><label>Yeni Sifre *</label>
+      <div class="pw-wrap"><input type="password" id="sd-n1" placeholder="En az 4 karakter">
+      <button class="pw-btn" type="button" onclick="epT('sd-n1',this)">Goster</button></div>
+    </div>
+    <div class="f"><label>Yeni Sifre Tekrar *</label>
+      <div class="pw-wrap"><input type="password" id="sd-n2" placeholder="Tekrar girin">
+      <button class="pw-btn" type="button" onclick="epT('sd-n2',this)">Goster</button></div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn" onclick="CM('m-sd')">Iptal</button><button class="btn btn-p" onclick="saveSD()">Guncelle</button></div>
+</div></div>
+<!-- KONFIRM -->
+<div class="ov" id="m-k">
+  <div class="konf">
+    <h3 id="k-t">Emin misiniz?</h3>
+    <p id="k-m"></p>
+    <div class="konf-acts"><button class="btn" onclick="CM('m-k')">İptal</button><button class="btn btn-del" id="k-ok">Sil</button></div>
+  </div>
+</div>
+
+<input type="file" id="imp-xl" accept=".xlsx,.xls" style="display:none" onchange="handleXL(event)">
+<input type="file" id="imp-js" accept=".json" style="display:none" onchange="handleJSON(event)">
+<div id="toast"></div>
+
+<script>
+
+/* ============================================================
+   SUPABASE BULUT SENKRONIZASYONU
+============================================================ */
+var SB_URL = 'https://obksrjdmyfujtakicrbq.supabase.co';
+var SB_KEY = 'sb_publishable_XMWhtYtsBuKKhIwAZI7P3A_c7RFnjvg';
+var SB_HAZIR = false;
+
+function sbH(){ return {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}; }
+
+function sbGet(tablo, cb){
+  fetch(SB_URL+'/rest/v1/'+tablo+'?select=*',{headers:sbH()})
+    .then(function(r){return r.json();})
+    .then(function(rows){cb(null,rows);})
+    .catch(function(e){cb(e,null);});
+}
+function sbUpsert(tablo, rows, cb){
+  if(!rows||!rows.length){if(cb)cb(null);return;}
+  fetch(SB_URL+'/rest/v1/'+tablo,{
+    method:'POST',
+    headers:Object.assign({'Prefer':'resolution=merge-duplicates'},sbH()),
+    body:JSON.stringify(rows)
+  }).then(function(r){if(cb)cb(r.ok?null:'hata');}).catch(function(e){if(cb)cb(e);});
+}
+function sbDelete(tablo, idField, idVal, cb){
+  fetch(SB_URL+'/rest/v1/'+tablo+'?'+idField+'=eq.'+encodeURIComponent(idVal),{
+    method:'DELETE',headers:sbH()
+  }).then(function(){if(cb)cb(null);}).catch(function(e){if(cb)cb(e);});
+}
+
+/* Tüm veriyi buluttan yükle */
+function sbBaslat(done){
+  sbGet('urunler',function(e1,urunRows){
+    if(!e1 && urunRows && urunRows.length>0){
+      db.urunler = urunRows.map(function(r){return r.data;});
+      var mx=0; db.urunler.forEach(function(u){if(u.id>mx)mx=u.id;});
+      if(mx>=db.nextId) db.nextId=mx+1;
+    }
+    sbGet('ayarlar',function(e2,ayarRows){
+      if(!e2 && ayarRows){
+        ayarRows.forEach(function(r){
+          if(r.key==='dolaplar' && r.data) db.dolaplar=r.data;
+          if(r.key==='hareketler' && r.data) db.hareketler=r.data;
+          if(r.key==='nextIds' && r.data){
+            if(r.data.nextId&&r.data.nextId>db.nextId)db.nextId=r.data.nextId;
+            if(r.data.nextHarId)db.nextHarId=r.data.nextHarId;
+            if(r.data.nextDolapId)db.nextDolapId=r.data.nextDolapId;
+          }
+        });
+      }
+      sbGet('kullanicilar',function(e3,kuRows){
+        SB_HAZIR=true;
+        if(!e3 && kuRows && kuRows.length>0){
+          /* Bulutta kullanıcı var - onları kullan */
+          KU = kuRows.map(function(r){return r.data;});
+        } else {
+          /* Bulut boş - mevcut kullanıcıları (admin dahil) buluta yaz */
+          sbTumKullaniciKaydet();
+        }
+        try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(ex){}
+        try{localStorage.setItem(UDB_KEY,JSON.stringify(KU));}catch(ex){}
+        if(done)done();
+      });
+    });
+  });
+}
+
+/* Tüm ürünleri + ayarları buluta yaz */
+function sbTumKaydet(){
+  if(!SB_HAZIR)return;
+  var ts=new Date().toISOString();
+  var urunRows=db.urunler.map(function(u){return {id:u.id,data:u,updated_at:ts};});
+  sbUpsert('urunler',urunRows);
+  sbUpsert('ayarlar',[
+    {key:'dolaplar',data:db.dolaplar,updated_at:ts},
+    {key:'hareketler',data:db.hareketler,updated_at:ts},
+    {key:'nextIds',data:{nextId:db.nextId,nextHarId:db.nextHarId,nextDolapId:db.nextDolapId},updated_at:ts}
+  ]);
+}
+
+/* Tek kullanıcıyı buluta yaz */
+
+/* === TEK KAYIT İŞLEMLERİ (çok kullanıcı için) === */
+function sbUrunKaydetTek(id){
+  if(!SB_HAZIR)return;
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
+  if(u) sbUpsert('urunler',[{id:u.id,data:u,updated_at:new Date().toISOString()}]);
+}
+function sbAyarKaydet(){
+  if(!SB_HAZIR)return;
+  var ts=new Date().toISOString();
+  sbUpsert('ayarlar',[
+    {key:'dolaplar',data:db.dolaplar,updated_at:ts},
+    {key:'hareketler',data:db.hareketler,updated_at:ts},
+    {key:'nextIds',data:{nextId:db.nextId,nextHarId:db.nextHarId,nextDolapId:db.nextDolapId},updated_at:ts}
+  ]);
+}
+
+/* === REALTIME - Canlı güncelleme === */
+var SB_CLIENT = null;
+var REALTIME_TIMER = null;
+function sbRealtimeBaslat(){
+  try{
+    if(typeof supabase==='undefined' || !supabase.createClient) return;
+    SB_CLIENT = supabase.createClient(SB_URL, SB_KEY);
+    SB_CLIENT.channel('envanter-degisiklik')
+      .on('postgres_changes', {event:'*', schema:'public', table:'urunler'}, function(){ sbCanliYenile(); })
+      .on('postgres_changes', {event:'*', schema:'public', table:'ayarlar'}, function(){ sbCanliYenile(); })
+      .on('postgres_changes', {event:'*', schema:'public', table:'kullanicilar'}, function(){ sbCanliYenile(); })
+      .subscribe();
+  }catch(ex){ console.log('Realtime baslatilamadi:', ex); }
+}
+/* Çok sık tetiklenmesin diye 800ms gecikme ile yenile */
+function sbCanliYenile(){
+  clearTimeout(REALTIME_TIMER);
+  REALTIME_TIMER = setTimeout(function(){
+    sbBaslat(function(){
+      initSiraDolap();
+      if(document.getElementById('main-app').style.display!=='none'){
+        renderStok(); updDBInfo();
+        if(document.getElementById('page-har').classList.contains('on'))renderHar();
+        if(document.getElementById('page-dolap').classList.contains('on'))renderDolaplar();
+        if(document.getElementById('page-kullanici').classList.contains('on'))renderKullanicilar();
+      }
+    });
+  }, 800);
+}
+
+function sbKullaniciKaydet(uid){
+  if(!SB_HAZIR){ /* henüz yüklenmediyse tümünü gönder */ }
+  var u=null; for(var i=0;i<KU.length;i++){if(KU[i].id===uid){u=KU[i];break;}}
+  if(u) sbUpsert('kullanicilar',[{id:u.id,data:u,updated_at:new Date().toISOString()}]);
+}
+function sbTumKullaniciKaydet(){
+  var ts=new Date().toISOString();
+  var rows=KU.map(function(u){return {id:u.id,data:u,updated_at:ts};});
+  sbUpsert('kullanicilar',rows);
+}
+function sbUrunSilBulut(id){ sbDelete('urunler','id',id); }
+function sbKullaniciSilBulut(id){ sbDelete('kullanicilar','id',id); }
+
+/* Yenile butonu - buluttan tekrar çek */
+function sbYenile(){
+  toast('Veriler yenileniyor...');
+  sbBaslat(function(){
+    renderStok(); updDBInfo();
+    if(document.getElementById('page-har').classList.contains('on'))renderHar();
+    if(document.getElementById('page-dolap').classList.contains('on'))renderDolaplar();
+    if(document.getElementById('page-kullanici').classList.contains('on'))renderKullanicilar();
+    toast('Guncellendi!');
+  });
+}
+
+
+
+/* KULLANICI SISTEMI */
+var UDB_KEY = 'inv_u9';
+var UDB_DEF = [{id:'admin', ad:'Yonetici', pw:'admin123', rol:'admin', renk:'#0b7a52', aktif:true, em:''}];
+function uYukle(){ try{ var r=localStorage.getItem(UDB_KEY); if(r){var p=JSON.parse(r);if(Array.isArray(p)&&p.length>0)return p;} }catch(ex){} return JSON.parse(JSON.stringify(UDB_DEF)); }
+function uKaydet(){
+  try{localStorage.setItem(UDB_KEY,JSON.stringify(KU));}catch(ex){}
+  if(typeof sbTumKullaniciKaydet==='function') sbTumKullaniciKaydet();
+}
+var KU = uYukle();
+var ME = null;
+
+function lgGiris(){
+  var u=(document.getElementById('lg-u').value||'').trim();
+  var p=(document.getElementById('lg-p').value||'');
+  var err=document.getElementById('lg-err');
+  err.style.display='none'; err.textContent='';
+  if(!u){err.textContent='Kullanici adi girin.';err.style.display='block';return;}
+  if(!p){err.textContent='Sifre girin.';err.style.display='block';return;}
+  var usr=null; for(var i=0;i<KU.length;i++){if(KU[i].id===u){usr=KU[i];break;}}
+  if(!usr){err.textContent='Kullanici bulunamadi: '+u;err.style.display='block';document.getElementById('lg-p').value='';return;}
+  if(usr.aktif===false){err.textContent='Bu hesap pasif. Yoneticiye basvurun.';err.style.display='block';document.getElementById('lg-p').value='';return;}
+  if(usr.pw!==p){err.textContent='Sifre hatali!';err.style.display='block';document.getElementById('lg-p').value='';return;}
+  lgAc(usr);
+}
+function lgKayitAc(){
+  document.getElementById('lg-screen').style.display='none';
+  document.getElementById('kayit-screen').style.display='flex';
+  document.getElementById('kayit-err').style.display='none';
+  ['kayit-id','kayit-em','kayit-s1','kayit-s2'].forEach(function(x){document.getElementById(x).value='';});
+  setTimeout(function(){document.getElementById('kayit-id').focus();},80);
+}
+function lgGirisGeri(){
+  document.getElementById('kayit-screen').style.display='none';
+  document.getElementById('lg-screen').style.display='flex';
+}
+function lgKayitOl(){
+  var uid=(document.getElementById('kayit-id').value||'').trim().toLowerCase().replace(/[^a-z0-9_.]/g,'');
+  var ad=uid;
+  var em=(document.getElementById('kayit-em').value||'').trim();
+  var s1=document.getElementById('kayit-s1').value;
+  var s2=document.getElementById('kayit-s2').value;
+  var err=document.getElementById('kayit-err');
+  err.style.display='none'; err.textContent='';
+  if(!uid){err.textContent='Kullanici adi zorunlu!';err.style.display='block';return;}
+  for(var j=0;j<KU.length;j++){if(KU[j].id===uid){err.textContent='Bu kullanici adi zaten kullaniliyor!';err.style.display='block';return;}}
+  if(!s1||s1.length<4){err.textContent='Sifre en az 4 karakter olmali!';err.style.display='block';return;}
+  if(s1!==s2){err.textContent='Sifreler eslesmIyor!';err.style.display='block';return;}
+  var renkler=['#0b7a52','#1255a0','#9a5e08','#b83030','#5e35b1','#1a7a8a'];
+  var renk=renkler[KU.length%renkler.length];
+  KU.push({id:uid,ad:ad,pw:s1,rol:'teknik',renk:renk,aktif:true,em:em});
+  uKaydet();
+  sbKullaniciKaydet(uid);
+  document.getElementById('kayit-screen').style.display='none';
+  document.getElementById('lg-screen').style.display='flex';
+  document.getElementById('lg-u').value=uid;
+  document.getElementById('lg-p').value='';
+  document.getElementById('lg-err').style.display='none';
+  var ok=document.getElementById('lg-ok');
+  if(ok){ok.textContent='Hesabiniz olusturuldu! Simdi giris yapabilirsiniz.';ok.style.display='block';}
+  setTimeout(function(){document.getElementById('lg-p').focus();},100);
+}
+function lgAc(usr){
+  ME=usr;
+  var ok=document.getElementById('lg-ok');if(ok)ok.style.display='none';
+  document.getElementById('lg-screen').style.display='none';
+  document.getElementById('main-app').style.display='';
+  document.getElementById('tu-wrap').innerHTML=
+    '<div class="topbar-user" onclick="lgCikis()">'
+    +'<div style="width:27px;height:27px;border-radius:50%;background:'+usr.renk
+    +';display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px;margin-right:6px">'
+    +(usr.ad?usr.ad[0]:'?')+'</div>'
+    +e(usr.ad)+' <span style="opacity:.4;font-size:11px;margin-left:3px">cikis</span>'
+    +'</div>';
+  uRolUygula(usr.rol);
+  renderStok(); updDBInfo();
+  setTimeout(function(){girisBildirim();},400);
+}
+function lgCikis(){
+  if(!confirm('Cikis yapmak istiyor musunuz?'))return;
+  ME=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('lg-screen').style.display='flex';
+  document.getElementById('tu-wrap').innerHTML='';
+  document.getElementById('lg-u').value='';
+  document.getElementById('lg-p').value='';
+  document.getElementById('lg-err').style.display='none';
+  setTimeout(function(){document.getElementById('lg-u').focus();},100);
+}
+function uRolUygula(rol){
+  var b=document.getElementById('btn-yeni');
+  var n=document.getElementById('nav-ku');
+  if(rol==='admin'){if(b)b.style.display='';if(n)n.style.display='';}
+  else if(rol==='teknik'){if(b)b.style.display='';if(n)n.style.display='none';}
+  else{if(b)b.style.display='none';if(n)n.style.display='none';}
+}
+function rolKontrol(ey){
+  if(!ME)return false;
+  if(ME.rol==='admin')return true;
+  if(ME.rol==='teknik')return['hareket','urun-ekle','urun-duzenle','excel'].indexOf(ey)>=0;
+  return ey==='excel';
+}
+function renderKullanicilar(){
+  var d=document.getElementById('k-liste'); if(!d)return;
+  var isA=ME&&ME.rol==='admin';
+  var h='';
+  for(var i=0;i<KU.length;i++){
+    var u=KU[i]; var self=ME&&ME.id===u.id;
+    var rl=u.rol==='admin'?'Yonetici':u.rol==='teknik'?'Teknik':'Izleyici';
+    var pb=(u.aktif===false)?'<span class="pasif-badge">Pasif</span>':'';
+    h+='<div class="user-card">'
+      +'<div class="u-av" style="background:'+(u.renk||'#555')+';">'+(u.ad?u.ad[0]:'?')+'</div>'
+      +'<div class="u-info">'
+        +'<div class="u-name">'+e(u.ad)+pb+(self?'<span style="font-size:11px;color:var(--grn);margin-left:6px">(Siz)</span>':'')+'<span class="rol-'+u.rol+'">'+rl+'</span></div>'
+        +'<div class="u-sub">Kullanici: <b>'+e(u.id)+'</b>'+(u.em?' &middot; '+e(u.em):'')+'</div>'
+      +'</div>'
+      +'<div class="u-acts" data-uid="'+u.id+'">';
+    if(isA||self) h+='<button class="btn btn-sm btn-ed" data-act="duz">Duzenle</button>';
+    h+='<button class="btn btn-sm btn-ed" data-act="sif">Sifre Degistir</button>';
+    if(isA&&!self) h+='<button class="btn btn-sm btn-del" data-act="sil">Sil</button>';
+    h+='</div></div>';
+  }
+  d.innerHTML=h;
+  var btns=d.querySelectorAll('[data-act]');
+  for(var j=0;j<btns.length;j++){
+    (function(btn){
+      btn.addEventListener('click',function(){
+        var uid=btn.parentNode.getAttribute('data-uid');
+        var act=btn.getAttribute('data-act');
+        if(act==='duz')openDuzK(uid);
+        else if(act==='sif')openSD(uid);
+        else if(act==='sil')silK(uid);
+      });
+    })(btns[j]);
+  }
+}
+var eKID=null;
+function openYeniK(){
+  if(!ME||ME.rol!=='admin'){toast('Yetkiniz yok!');return;}
+  eKID=null;
+  document.getElementById('m-ku-t').textContent='Yeni Kullanici';
+  ['ku-ad','ku-id','ku-s1','ku-s2','ku-em'].forEach(function(x){document.getElementById(x).value='';});
+  document.getElementById('ku-id').removeAttribute('readonly');
+  document.getElementById('ku-rol').value='teknik';
+  document.getElementById('ku-rol').disabled=false;
+  document.getElementById('ku-aktif').value='true';
+  document.getElementById('ku-aktif').disabled=false;
+  document.getElementById('ku-renk').value='#1255a0';
+  document.getElementById('ku-sw').style.display='';
+  OM('m-ku'); setTimeout(function(){document.getElementById('ku-ad').focus();},60);
+}
+function openDuzK(uid){
+  var u=null; for(var i=0;i<KU.length;i++){if(KU[i].id===uid){u=KU[i];break;}}
+  if(!u)return;
+  var isA=ME&&ME.rol==='admin';
+  eKID=uid;
+  document.getElementById('m-ku-t').textContent='Kullaniciy Duzenle';
+  document.getElementById('ku-ad').value=u.ad;
+  document.getElementById('ku-id').value=u.id;
+  document.getElementById('ku-id').setAttribute('readonly','true');
+  document.getElementById('ku-rol').value=u.rol;
+  document.getElementById('ku-rol').disabled=!isA;
+  document.getElementById('ku-aktif').value=String(u.aktif!==false);
+  document.getElementById('ku-aktif').disabled=!isA;
+  document.getElementById('ku-renk').value=u.renk||'#0b7a52';
+  document.getElementById('ku-em').value=u.em||'';
+  document.getElementById('ku-sw').style.display='none';
+  OM('m-ku'); setTimeout(function(){document.getElementById('ku-ad').focus();},60);
+}
+function saveK(){
+  var ad=document.getElementById('ku-ad').value.trim();
+  var uid=document.getElementById('ku-id').value.trim().toLowerCase().replace(/[^a-z0-9_.]/g,'');
+  var rol=document.getElementById('ku-rol').value;
+  var aktif=document.getElementById('ku-aktif').value==='true';
+  var renk=document.getElementById('ku-renk').value;
+  var em=document.getElementById('ku-em').value.trim();
+  var isA=ME&&ME.rol==='admin';
+  if(!ad){toast('Ad Soyad zorunlu!');return;}
+  if(!uid){toast('Kullanici adi zorunlu!');return;}
+  if(eKID){
+    var u=null; for(var i=0;i<KU.length;i++){if(KU[i].id===eKID){u=KU[i];break;}}
+    u.ad=ad; u.renk=renk; u.em=em;
+    if(isA){u.rol=rol; u.aktif=aktif;}
+    if(ME&&ME.id===eKID){ME.ad=ad; if(isA)ME.rol=rol;}
+    toast('Guncellendi');
+  } else {
+    for(var j=0;j<KU.length;j++){if(KU[j].id===uid){toast('Bu kullanici adi zaten var!');return;}}
+    var s1=document.getElementById('ku-s1').value;
+    var s2=document.getElementById('ku-s2').value;
+    if(!s1||s1.length<4){toast('Sifre en az 4 karakter!');return;}
+    if(s1!==s2){toast('Sifreler eslesmIyor!');return;}
+    KU.push({id:uid,ad:ad,pw:s1,rol:rol,renk:renk,aktif:true,em:em});
+    toast('Kullanici eklendi: '+ad);
+  }
+  document.getElementById('ku-rol').disabled=false;
+  document.getElementById('ku-aktif').disabled=false;
+  uKaydet(); CM('m-ku'); renderKullanicilar();
+}
+function silK(uid){
+  var u=null; for(var i=0;i<KU.length;i++){if(KU[i].id===uid){u=KU[i];break;}}
+  if(!u)return;
+  konfirm('Kullaniciyi Sil','"'+u.ad+'" silinecek.','Sil',function(){
+    var arr=[]; for(var i=0;i<KU.length;i++){if(KU[i].id!==uid)arr.push(KU[i]);}
+    KU=arr; uKaydet(); sbKullaniciSilBulut(uid); renderKullanicilar(); toast('Silindi');
+  });
+}
+var sdU=null;
+function openSD(uid){
+  sdU=uid||(ME&&ME.id);
+  var u=null; for(var i=0;i<KU.length;i++){if(KU[i].id===sdU){u=KU[i];break;}}
+  document.getElementById('sd-bas').textContent=(u?u.ad:'')+' - Sifre Degistir';
+  var adminOther=ME&&ME.rol==='admin'&&ME.id!==sdU;
+  document.getElementById('sd-er').style.display=adminOther?'none':'';
+  ['sd-e','sd-n1','sd-n2'].forEach(function(x){document.getElementById(x).value='';});
+  OM('m-sd'); setTimeout(function(){document.getElementById(adminOther?'sd-n1':'sd-e').focus();},60);
+}
+function saveSD(){
+  var u=null; for(var i=0;i<KU.length;i++){if(KU[i].id===sdU){u=KU[i];break;}}
+  if(!u)return;
+  var adminOther=ME&&ME.rol==='admin'&&ME.id!==sdU;
+  var eski=document.getElementById('sd-e').value;
+  var y1=document.getElementById('sd-n1').value;
+  var y2=document.getElementById('sd-n2').value;
+  if(!adminOther&&u.pw!==eski){toast('Mevcut sifre hatali!');return;}
+  if(!y1||y1.length<4){toast('Yeni sifre en az 4 karakter!');return;}
+  if(y1!==y2){toast('Sifreler eslesmIyor!');return;}
+  u.pw=y1; if(ME&&ME.id===sdU)ME.pw=y1;
+  uKaydet(); CM('m-sd'); toast('Sifre guncellendi');
+}
+function epT(id,btn){var i=document.getElementById(id);i.type=(i.type==='password')?'text':'password';btn.textContent=(i.type==='password')?'Goster':'Gizle';}
+
+
+const DB_KEY='envanter_teknik_v5';
+const DEF={"urunler": [{"id": 1, "ad": "Wifi 6 Adaptör", "marka": "TPLİNK, USB 3.0", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 2, "ad": "KWM Switch", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 3, "ad": "Programlanabilir Priz", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 4, "ad": "Cırt Cırtlı Bant", "marka": "", "birim": "Paket", "kat": "Sarf Malzeme", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 5, "ad": "Yapışkan Kroşe", "marka": "", "birim": "Paket", "kat": "Sarf Malzeme", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 6, "ad": "Plastik Kelepçe", "marka": "", "birim": "Paket", "kat": "Sarf Malzeme", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 7, "ad": "Kasa İçi Kart Okuyucu", "marka": "SLİNK (SLX-533A)", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "SLX-533A", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 8, "ad": "Modem (Switch)", "marka": "TPLİNK (10/100MBPS) (5 Lİ)", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 9, "ad": "TYPE C Çoklayıcı", "marka": "11 PORT ÇIKIŞLI", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 10, "ad": "TYPE C Çoklayıcı", "marka": "6 PORT ÇIKIŞLI, Baseus Marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 3, "cikan": 1, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 11, "ad": "USB 3.0 Hub", "marka": "Hadron, 4 Adet Usb 3.0 Çıkışlı", "birim": "Adet", "kat": "Elektronik", "mevcut": 9, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 12, "ad": "USB 3.0 Hub", "marka": "Dark, 2 type c, 2 Usb 2.0, 1 Usb 3.0", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 13, "ad": "Vida Kutusu", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 14, "ad": "M2 NVME Disk Okuyucu Klon Özellikli", "marka": "Dark", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 15, "ad": "M2 NVME Disk Kutusu", "marka": "Dark, Usb 3.2, Type C girişli", "birim": "Adet", "kat": "Elektronik", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 16, "ad": "M2 NVME VE Sata Disk Okuyucu", "marka": "Codegen", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 17, "ad": "M2 NVME VE Sata Disk Kutusu", "marka": "Dark", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 18, "ad": "Sabit Disk ve Sata SSD Disk Kutusu", "marka": "Dark, 2.5 inç Laptop Diskler için", "birim": "Adet", "kat": "Elektronik", "mevcut": 7, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 19, "ad": "Sabit Disk Okuyucu", "marka": "Sata ve Mekanik Diskler İçin, Tek girişli, Adaptörlü", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 20, "ad": "Sabit Disk Okuyucu (Klonlu)", "marka": "Sata ve Mekanik Diskler İçin, Çift girişli, Adaptörlü, Klon özelikli", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 21, "ad": "5V Adaptör", "marka": "3.5 Amper Çıkışlı, 0.5 Amper Çıkışlı", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 22, "ad": "Toz Gözlüğü", "marka": "", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 23, "ad": "Anti Statik Eldiven", "marka": "Çift Olarak", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 24, "ad": "EZ RJ45 Konnektör", "marka": "7 paket 50'lik, 1 Paket 100'lük", "birim": "Paket", "kat": "Ağ & İletişim", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 25, "ad": "RJ45 Konnektör Kılıfı", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 44, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 26, "ad": "RJ45 Çakma Pensesi", "marka": "Cortex marka", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 27, "ad": "EZRJ45 Çakma Pensesi", "marka": "S LİNK (hem ezrj45 hemde rj45 konektörüne uygundur.)", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 28, "ad": "Termal Macun", "marka": "Arctic, Mx-4 özellikli", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 29, "ad": "Anti Statik Bileklik", "marka": "", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 30, "ad": "RJ45 Uzatıcı", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 31, "ad": "Kablo Kesme Aleti", "marka": "Ethernet Kablosu için, Plato Marka", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 01", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 32, "ad": "Displayport Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 13, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 33, "ad": "Displayport Hdmi Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 34, "ad": "Displayport to VGA", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 35, "ad": "Displayport to HDMİ", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 13, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 36, "ad": "Displayport to DVİ", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 37, "ad": "HDMİ 2 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 38, "ad": "HDMİ 3 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 39, "ad": "HDMİ 5 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 7, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 40, "ad": "Hdmi to DVİ Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 41, "ad": "Hdmi to VGA", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 42, "ad": "Hdmi to DVİ", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 43, "ad": "Usb 2.0 to Uzatma Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 44, "ad": "Usb 3.0 Uzatma Kablosu 3 Metrelik", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 45, "ad": "Usb 3.0 Uzatma Kablosu 1.5 Metrelik", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 46, "ad": "Usb 3.0 Uzatma Kablosu 0.10 CM", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 47, "ad": "Organizer", "marka": "", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 6, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 48, "ad": "TYPE C Uzatıcı", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 49, "ad": "TYPE C to Usb 3.1", "marka": "Mini OTG Adaptör, Baseus Marka", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 50, "ad": "HDMİ Uzatıcı", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 10, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 51, "ad": "HDMİ Çoğaltıcı", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 52, "ad": "Eski Kablo Tester", "marka": "Slink", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 53, "ad": "Kablo/Hat Takip Probe", "marka": "Goldtool Marka", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 54, "ad": "Kablo Bulucu - Hat Takip Cihazı", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 55, "ad": "VGA Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 24, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 56, "ad": "Kompresör", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 57, "ad": "Power Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 02", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 58, "ad": "Cat 6 15 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 59, "ad": "Cat 6 20 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 60, "ad": "Yazıcı Kablosu", "marka": "Usb 2.0", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 61, "ad": "Cat 6 5 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 62, "ad": "Cat 6 10 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 63, "ad": "SWİTCH Yazıcı Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 64, "ad": "SWİTCH Client Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 65, "ad": "Sata Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 66, "ad": "SWİTCH Wifi Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 67, "ad": "Cat 6 8 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 68, "ad": "Cat 6 3 Metre Kablo", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 03", "bolme": "5. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 69, "ad": "Maske", "marka": "", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 10, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 70, "ad": "Usb 2.0 to Mini Type B", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 8, "cikan": 1, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 71, "ad": "Usb 3.0 to Mini Type B", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 2, "cikan": 1, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 72, "ad": "Usb 3.0 to Micro B Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 73, "ad": "Aux Ses Kablosu", "marka": "Kulaklık Ses Kablosu", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 5, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 74, "ad": "Laptop Açma Aparatı", "marka": "", "birim": "Paket", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 75, "ad": "Klavye Toz Alma Fırçası", "marka": "", "birim": "Adet", "kat": "Temizlik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 76, "ad": "Termal Macun", "marka": "MX4, Arctic Marka", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 77, "ad": "Anti Statik Eldiven", "marka": "Çift Olarak", "birim": "Adet", "kat": "Güvenlik & KKD", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 78, "ad": "Tornavida Takımı", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 79, "ad": "Tornavidalar", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 80, "ad": "Maket Bıçağı", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 81, "ad": "Kablo Kesme Aleti", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 82, "ad": "Kablo Sıyırma Aleti", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 83, "ad": "Kargaburun", "marka": "Knipex", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 84, "ad": "L Tipi Yıldız Tornavida", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 85, "ad": "Usb 3.0 Flaş Bellek", "marka": "128 gb, Kingstone marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 6, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 86, "ad": "Type C Flaş Bellek", "marka": "256 gb, Sandisk Marka, Dual Drive Özellikli", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 87, "ad": "Bluetooth Alıcı", "marka": "Dark Marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 88, "ad": "Harici Ssd Disk", "marka": "Hİ LEVEL, 240 GB", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 89, "ad": "Harici Ssd Disk", "marka": "SANDİSK, 240 GB", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 90, "ad": "Harici Sabit Disk", "marka": "WD, 750 GB", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 91, "ad": "Susta", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 92, "ad": "Metre", "marka": "10 Metre", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 93, "ad": "Lazer Metre", "marka": "KL Markalı", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 94, "ad": "Makaron", "marka": "", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 95, "ad": "Usb 2.0 To RS232 Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 96, "ad": "RJ45 To RS232 Seri Konsol Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 97, "ad": "Seriport to Paralelport Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 98, "ad": "TP LİNK Poe Adaptör", "marka": "", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 99, "ad": "USB 2.0 TO RS232 Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 100, "ad": "Usb 2.0 İnternet Adaptörü", "marka": "Asus", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 101, "ad": "Usb 3.0 İnternet Adaptörü", "marka": "Dark", "birim": "Adet", "kat": "Ağ & İletişim", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 102, "ad": "Power Supply Tester", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "3. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 103, "ad": "Dahili Ağ Kartı", "marka": "TPLİNK, 200 MBPS (TF-3200)", "birim": "Adet", "kat": "Elektronik", "mevcut": 4, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "TF-3200", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 104, "ad": "Dahili Ağ Kartı", "marka": "SLİNK (SL-exG5), 1 Gigabit", "birim": "Adet", "kat": "Elektronik", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "SL-exG5", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 105, "ad": "Kablosuz Görüntü Aktarıcı", "marka": "EZCAST Marka", "birim": "Adet", "kat": "Elektronik", "mevcut": 2, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 106, "ad": "VGA TO HDMİ Dönüştürücü", "marka": "Beek Marka, Adaptörlü", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 107, "ad": "DVI TO VGA Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 108, "ad": "Molex to 2 SATA Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 11, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 109, "ad": "Molex to SATA Dönüştürücü", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 110, "ad": "Molex Güç Çoklayıcı", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 9, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 111, "ad": "Anakart Güç Kablosu", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 3, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 04", "bolme": "4. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 112, "ad": "CD'ler ve DVD'ler", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 113, "ad": "Krone Pense", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 114, "ad": "EZRJ45 Konnektör", "marka": "", "birim": "Paket", "kat": "Ağ & İletişim", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 115, "ad": "Yankeske", "marka": "Knipex", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 116, "ad": "Cırt Cırtlı Bant", "marka": "", "birim": "Adet", "kat": "Sarf Malzeme", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 117, "ad": "Kablo Çakma Aleti", "marka": "Slink", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 118, "ad": "Kablo Kesme Aleti", "marka": "Plato", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 119, "ad": "Kablo Sıyırma Aleti", "marka": "", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 120, "ad": "Silinmiş Diskler", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 0, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 05", "bolme": "2. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "Stok sayılmamış", "durum_tip": "normal"}, {"id": 121, "ad": "Sata Kablo", "marka": "", "birim": "Adet", "kat": "Kablo & Bağlantı", "mevcut": 37, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 06", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 122, "ad": "PC Kasa İçi SSD Yuvası", "marka": "", "birim": "Adet", "kat": "Elektronik", "mevcut": 8, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 06", "bolme": "1. Raf", "loknot": "", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}, {"id": 123, "ad": "Matkap ve Vida Takımı", "marka": "BOSCH Marka, (205 Nolu Odada)", "birim": "Adet", "kat": "Araç-Gereç", "mevcut": 1, "cikan": 0, "min": 0, "dolap": "Teknik Dolap 10", "bolme": "2. Raf", "loknot": "205 nolu oda", "sku": "", "tedarik": "", "not": "", "durum_tip": "normal"}], "dolaplar": [{"id": 1, "ad": "Teknik Dolap 01", "sira": 1, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Adaptörler, hublar, disk kutuları, konnektörler"}, {"id": 2, "ad": "Teknik Dolap 02", "sira": 2, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Görüntü kabloları, USB kabloları, test cihazları"}, {"id": 3, "ad": "Teknik Dolap 03", "sira": 3, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Cat6 network kabloları"}, {"id": 4, "ad": "Teknik Dolap 04", "sira": 4, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "El aletleri, flash bellekler, dönüştürücüler"}, {"id": 5, "ad": "Teknik Dolap 05", "sira": 5, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Ağ aletleri, konnektörler"}, {"id": 6, "ad": "Teknik Dolap 06", "sira": 6, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Sata kablo, SSD yuvaları"}, {"id": 7, "ad": "Teknik Dolap 10", "sira": 7, "bolmeler": ["1. Raf", "2. Raf", "3. Raf", "4. Raf", "5. Raf"], "aciklama": "Matkap ve takımlar"}], "hareketler": [{"id": 1, "urunId": 10, "tip": "cikan", "miktar": 1, "tarih": "2025-01-15", "aciklama": "Kullanıma alındı", "yapan": "", "ts": 1736899200000}, {"id": 2, "urunId": 70, "tip": "cikan", "miktar": 1, "tarih": "2025-02-01", "aciklama": "", "yapan": "", "ts": 1738368000000}, {"id": 3, "urunId": 71, "tip": "cikan", "miktar": 1, "tarih": "2025-02-01", "aciklama": "", "yapan": "", "ts": 1738368001000}], "nextId": 124, "nextDolapId": 8, "nextHarId": 4};
+function loadDB(){try{const r=localStorage.getItem(DB_KEY);if(r)return JSON.parse(r);}catch(e){}return JSON.parse(JSON.stringify(DEF));}
+function saveDB(){
+  try{ localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo(); }catch(e){}
+  sbTumKaydet();
+}
+function updDBInfo(){const sz=(localStorage.getItem(DB_KEY)||'').length;document.getElementById('db-stat').innerHTML=db.urunler.length+' ürün • '+db.hareketler.length+' hareket<br>'+(sz/1024).toFixed(1)+' KB';}
+let db=loadDB();
+
+// ---- Sort ----
+let sc='id',sd=1;
+function setSort(c){if(sc===c)sd*=-1;else{sc=c;sd=1;}renderStok();}
+function updArr(){['ad','marka','mevcut','kalan','dolap'].forEach(c=>{const a=document.getElementById('arr-'+c);const t=document.getElementById('th-'+c);if(!a||!t)return;t.classList.toggle('sorted',sc===c);a.textContent=sc===c?(sd===1?' ↑':' ↓'):'';});}
+
+// ---- Durum ----
+function kalan(u){return u.mevcut-(u.cikan||0);}
+function durum(u){
+  const dt=u.durum_tip||'normal';
+  if(dt==='onemsiz') return {l:'Önemsiz',c:'p-one',k:'one'};
+  if(dt==='tuikendi'||dt==='tukendi') return {l:'Tükendi',c:'p-out',k:'out'};
+  if(dt==='kritik') return {l:'Kritik',c:'p-low',k:'low'};
+  // otomatik
+  const k=kalan(u);
+  if(k<=0) return {l:'Tükendi',c:'p-out',k:'out'};
+  if(u.min>0&&k<=u.min) return {l:'Kritik',c:'p-low',k:'low'};
+  return {l:'Yeterli',c:'p-ok',k:'ok'};
+}
+
+
+/* === KRITIK STOK BILDIRIMI === */
+function kritikUrunler(){
+  var liste=[];
+  for(var i=0;i<db.urunler.length;i++){
+    var u=db.urunler[i];
+    var d=durum(u);
+    if(d.k==='out'||d.k==='low'){
+      liste.push({u:u,durum:d});
+    }
+  }
+  return liste;
+}
+function bildirimGuncelle(){
+  var liste=kritikUrunler();
+  var badge=document.getElementById('bell-badge');
+  if(!badge)return;
+  if(liste.length>0){
+    badge.textContent=liste.length;
+    badge.style.display='flex';
+  } else {
+    badge.style.display='none';
+  }
+}
+function bildirimAc(){
+  var liste=kritikUrunler();
+  var box=document.getElementById('bell-box');
+  if(!box)return;
+  var acik=box.style.display==='block';
+  if(acik){box.style.display='none';return;}
+  var h='<div style="padding:12px 15px;border-bottom:1px solid var(--brd);font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center">'
+    +'<span>🔔 Stok Uyarilari</span>'
+    +'<span style="font-size:12px;color:var(--tx3);font-weight:400">'+liste.length+' urun</span></div>';
+  if(liste.length===0){
+    h+='<div style="padding:24px 15px;text-align:center;color:var(--tx3);font-size:13px">✅ Tum stoklar yeterli seviyede</div>';
+  } else {
+    /* Önce tükenenler, sonra kritikler */
+    var out=liste.filter(function(x){return x.durum.k==='out';});
+    var low=liste.filter(function(x){return x.durum.k==='low';});
+    var sirali=out.concat(low);
+    h+='<div style="max-height:340px;overflow-y:auto">';
+    for(var i=0;i<sirali.length;i++){
+      var x=sirali[i];var u=x.u;var k=kalan(u);
+      var renk=x.durum.k==='out'?'#b83030':'#9a5e08';
+      var etk=x.durum.k==='out'?'TÜKENDI':'KRITIK';
+      h+='<div onclick="bildirimUrunGit('+u.id+')" style="padding:10px 15px;border-bottom:1px solid var(--brd);cursor:pointer;display:flex;align-items:center;gap:10px" onmouseover="this.style.background=\'var(--sur2)\'" onmouseout="this.style.background=\'\'">'
+        +'<span style="background:'+renk+';color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0">'+etk+'</span>'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e(u.ad)+'</div>'
+        +'<div style="font-size:11px;color:var(--tx3)">Kalan: '+k+' '+(u.birim||'')+(u.min>0?' / Min: '+u.min:'')+(u.dolap?' &middot; '+e(u.dolap):'')+'</div></div>'
+        +'</div>';
+    }
+    h+='</div>';
+  }
+  box.innerHTML=h;
+  box.style.display='block';
+}
+function bildirimUrunGit(id){
+  document.getElementById('bell-box').style.display='none';
+  showPage('stok');
+  var ara=document.getElementById('ara');
+  var u=null; for(var i=0;i<db.urunler.length;i++){if(db.urunler[i].id===id){u=db.urunler[i];break;}}
+  if(u&&ara){ara.value=u.ad;renderStok();}
+}
+/* Giriş sonrası kritik varsa otomatik bildirim göster */
+function girisBildirim(){
+  bildirimGuncelle();
+  var liste=kritikUrunler();
+  if(liste.length>0){
+    var out=liste.filter(function(x){return x.durum.k==='out';}).length;
+    var low=liste.filter(function(x){return x.durum.k==='low';}).length;
+    var msg='⚠️ ';
+    if(out>0)msg+=out+' urun TUKENDI';
+    if(out>0&&low>0)msg+=', ';
+    if(low>0)msg+=low+' urun KRITIK seviyede';
+    toast(msg);
+    setTimeout(function(){bildirimAc();},600);
+  }
+}
+
+// ---- Kat Chip ----
+const KATS={'Elektronik':'background:#f0ebfd;color:#5e35b1','Ağ & İletişim':'background:#e5f0fb;color:#1255a0','Kablo & Bağlantı':'background:#e4f5ee;color:#085e3e','Araç-Gereç':'background:#fdefd5;color:#9a5e08','Sarf Malzeme':'background:#f2f2f0;color:#505050','Güvenlik & KKD':'background:#fceaea;color:#b83030','Kırtasiye':'background:#fefce8;color:#a16207','Temizlik':'background:#f0fdf4;color:#166534','Diğer':'background:#f2f2f0;color:#505050'};
+function kChip(k){const s=KATS[k]||KATS['Diğer'];return'<span class="kc" style="'+s+'">'+e(k)+'</span>';}
+
+// ---- Sıra No hesaplama ----
+function nextSiraForDolap(dolapAd){
+  const inDolap=db.urunler.filter(u=>u.dolap===dolapAd);
+  if(!inDolap.length) return 1;
+  return Math.max(...inDolap.map(u=>u.sira_dolap||0))+1;
+}
+function getSiraDolap(u){return u.sira_dolap||u.id;}
+// Tüm dolaplar için sira_dolap değerlerini başlat (eski kayıtlar için)
+function initSiraDolap(){
+  const byDolap={};
+  db.urunler.forEach(u=>{
+    if(!u.sira_dolap){
+      if(!byDolap[u.dolap||'']) byDolap[u.dolap||'']=0;
+      byDolap[u.dolap||'']++;
+      u.sira_dolap=byDolap[u.dolap||''];
+    }
+  });
+}
+
+// ---- Seçim ----
+let secilenler=new Set();
+function toggleAll(chk){document.querySelectorAll('#tbody tr[data-id]').forEach(tr=>{const id=+tr.dataset.id;chk.checked?secilenler.add(id):secilenler.delete(id);tr.querySelector('input[type=checkbox]').checked=chk.checked;});updBulkBar();}
+function toggleRow(id,chk){chk.checked?secilenler.add(id):secilenler.delete(id);updBulkBar();}
+function updBulkBar(){const n=secilenler.size;document.getElementById('bulk-bar').classList.toggle('show',n>0);document.getElementById('bulk-info').textContent=n+' ürün seçildi';}
+function secimIptal(){secilenler.clear();document.querySelectorAll('#tbody input[type=checkbox]').forEach(c=>c.checked=false);const ca=document.getElementById('chk-all');if(ca)ca.checked=false;updBulkBar();}
+function bulkSil(){
+  if(!secilenler.size)return;
+  const n=secilenler.size;
+  konfirm('Toplu Silme',n+' ürün kalıcı olarak silinecek. Emin misiniz?','🗑 Hepsini Sil',()=>{
+    secilenler.forEach(id=>{db.urunler=db.urunler.filter(x=>x.id!==id);db.hareketler=db.hareketler.filter(x=>x.urunId!==id);if(typeof sbUrunSilBulut==='function')sbUrunSilBulut(id);});
+    secilenler.clear();try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}sbAyarKaydet();renderStok();toast('🗑 '+n+' ürün silindi');
+  });
+}
+
+// ---- Render Stok ----
+function renderStok(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const fd=document.getElementById('flt-d').value;
+  const fk=document.getElementById('flt-k').value;
+  const fdur=document.getElementById('flt-dur').value;
+  let list=db.urunler.filter(u=>{
+    if(fd&&u.dolap!==fd)return false;
+    if(fk&&u.kat!==fk)return false;
+    if(fdur&&durum(u).k!==fdur)return false;
+    if(q){const h=[u.ad,u.marka,u.dolap,u.bolme,u.sku,u.kat].join(' ').toLowerCase();if(!h.includes(q))return false;}
+    return true;
+  });
+  // Dolap sırasını bul
+  const dolapSira={};
+  db.dolaplar.forEach(d=>dolapSira[d.ad]=(d.sira||99));
+  list.sort((a,b)=>{
+    // Önce daima dolap sırasına göre
+    const da=dolapSira[a.dolap||'']||99, db2=dolapSira[b.dolap||'']||99;
+    if(da!==db2) return da-db2;
+    // Sonra dolap içi sıra
+    if(sc==='id'||sc==='dolap'){
+      return ((a.sira_dolap||a.id)-(b.sira_dolap||b.id))*sd;
+    }
+    let av,bv;
+    if(sc==='mevcut'){av=a.mevcut;bv=b.mevcut;}
+    else if(sc==='kalan'){av=kalan(a);bv=kalan(b);}
+    else if(sc==='marka'){av=a.marka||'';bv=b.marka||'';}
+    else{av=a.ad||'';bv=b.ad||'';}
+    if(typeof av==='string') return av.localeCompare(bv,'tr')*sd;
+    return (av-bv)*sd;
+  });
+  const tbody=document.getElementById('tbody');
+  if(!list.length){tbody.innerHTML='';document.getElementById('empty').style.display='block';updStats();return;}
+  document.getElementById('empty').style.display='none';
+  tbody.innerHTML=list.map(u=>{
+    const d=durum(u);const k=kalan(u);const sel=secilenler.has(u.id);
+    return '<tr data-id="'+u.id+'">'+
+      '<td><input type="checkbox"'+(sel?' checked':'')+' onclick="toggleRow('+u.id+',this)"></td>'+
+      
+      '<td><div style="font-weight:600;font-size:13.5px">'+e(u.ad)+'</div>'+(u.sku?'<div style="font-size:11px;color:var(--tx3)">'+e(u.sku)+'</div>':'')+'</td>'+
+      '<td style="color:var(--tx2);font-size:12.5px">'+e(u.marka||'—')+'</td>'+
+      '<td style="font-size:13px">'+e(u.birim)+'</td>'+
+      '<td>'+kChip(u.kat||'Diğer')+'</td>'+
+      '<td class="td-r" style="font-size:14px">'+u.mevcut+'</td>'+
+      '<td class="td-r" style="color:var(--amb);font-size:14px">'+(u.cikan||0)+'</td>'+
+      '<td class="td-r td-red" style="font-size:14px">'+k+'</td>'+
+      '<td style="font-size:12.5px;font-weight:600">'+e(u.dolap||'—')+'</td>'+
+      '<td style="font-size:12.5px">'+e(u.bolme||'—')+(u.loknot?'<div style="font-size:11px;color:var(--tx3)">'+e(u.loknot)+'</div>':'')+'</td>'+
+      '<td><span class="pill '+d.c+'">'+d.l+'</span></td>'+
+      '<td><div class="td-acts">'+
+        '<button class="btn btn-sm btn-ed" onclick="openHarModal('+u.id+')" title="Hareket">📤</button>'+
+        '<button class="btn btn-sm btn-ed" onclick="openTasima('+u.id+')" title="Taşı">📦</button>'+
+        '<button class="btn btn-sm btn-ed" onclick="openUrunModal('+u.id+')" title="Düzenle">✏️</button>'+
+        '<button class="btn btn-sm btn-del" onclick="konfirmSilUrun('+u.id+')" title="Sil">🗑</button>'+
+      '</div></td></tr>';
+  }).join('');
+  updStats();updFilters();updArr();
+  if(typeof bildirimGuncelle==='function')bildirimGuncelle();
+}
+
+function updStats(){
+  document.getElementById('s-c').textContent=db.urunler.length;
+  document.getElementById('s-m').textContent=db.urunler.reduce((a,u)=>a+u.mevcut,0).toLocaleString('tr-TR');
+  document.getElementById('s-k').textContent=db.urunler.reduce((a,u)=>a+(u.cikan||0),0).toLocaleString('tr-TR');
+  document.getElementById('s-ka').textContent=db.urunler.reduce((a,u)=>a+kalan(u),0).toLocaleString('tr-TR');
+}
+function updFilters(){
+  const sorted=[...db.dolaplar].sort((a,b)=>(a.sira||0)-(b.sira||0));
+  const dl=sorted.map(d=>d.ad);
+  const df=document.getElementById('flt-d');const dv=df.value;
+  df.innerHTML='<option value="">Tüm Dolaplar</option>'+dl.map(d=>'<option'+(d===dv?' selected':'')+'>'+d+'</option>').join('');
+  const kl=[...new Set(db.urunler.map(u=>u.kat).filter(Boolean))].sort();
+  const kf=document.getElementById('flt-k');const kv=kf.value;
+  kf.innerHTML='<option value="">Tüm Kategoriler</option>'+kl.map(k=>'<option'+(k===kv?' selected':'')+'>'+k+'</option>').join('');
+}
+
+// ---- Render Hareketler ----
+function renderHar(){
+  const q=(document.getElementById('hs').value||'').toLowerCase();
+  const ft=document.getElementById('hft').value;
+  let list=[...db.hareketler].filter(h=>{
+    if(ft&&h.tip!==ft)return false;
+    if(q){const u=db.urunler.find(x=>x.id===h.urunId);const h2=[(u&&u.ad)||'',h.aciklama||'',h.yapan||''].join(' ').toLowerCase();if(!h2.includes(q))return false;}
+    return true;
+  }).sort((a,b)=>b.ts-a.ts);
+  const tbody=document.getElementById('har-tbody');
+  if(!list.length){tbody.innerHTML='';document.getElementById('har-empty').style.display='block';return;}
+  document.getElementById('har-empty').style.display='none';
+  tbody.innerHTML=list.map(h=>{
+    const u=db.urunler.find(x=>x.id===h.urunId);
+    const uA=u?u.ad:'(#'+h.urunId+')';
+    const uL=u?(u.dolap||'')+(u.bolme?' / '+u.bolme:''):'';
+    const tb=h.tip==='cikan'?'<span class="bh-c">📤 Çıkış</span>':h.tip==='giris'?'<span class="bh-g">📥 Giriş</span>':'<span class="bh-d">🔧 Düzeltme</span>';
+    const dt=new Date(h.ts);
+    const ds=dt.toLocaleDateString('tr-TR')+' '+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    return '<tr>'+
+      '<td style="font-size:12px;color:var(--tx2);white-space:nowrap">'+ds+'</td>'+
+      '<td style="font-weight:600">'+e(uA)+'</td>'+
+      '<td style="font-size:12px;color:var(--tx2)">'+e(uL)+'</td>'+
+      '<td>'+tb+'</td>'+
+      '<td style="text-align:right;font-weight:700">'+h.miktar+' '+(u?e(u.birim):'')+'</td>'+
+      '<td style="color:var(--tx2)">'+e(h.aciklama||'—')+'</td>'+
+      '<td style="color:var(--tx2)">'+e(h.yapan||'—')+'</td>'+
+      '<td><div class="td-acts">'+
+        '<button class="btn btn-sm btn-warn" onclick="openHarEdit('+h.id+')" title="Düzenle">✏️</button>'+
+        '<button class="btn btn-sm btn-del" onclick="konfirmSilHar('+h.id+')" title="Sil">🗑</button>'+
+      '</div></td></tr>';
+  }).join('');
+}
+
+// ---- Render Dolaplar ----
+let dragSrc=null;
+function renderDolaplar(){
+  const list=document.getElementById('dolap-list');
+  const sorted=[...db.dolaplar].sort((a,b)=>(a.sira||0)-(b.sira||0));
+  list.innerHTML='';
+  sorted.forEach(d=>{
+    const cnt=db.urunler.filter(u=>u.dolap===d.ad).length;
+    const div=document.createElement('div');
+    div.className='dolap-row';div.dataset.id=d.id;div.draggable=true;
+    div.innerHTML=
+      '<span class="dolap-drag-handle" title="Sürükle">⠿</span>'+
+      '<div class="dolap-info">'+
+        '<div class="dolap-title">🗄 '+e(d.ad)+'</div>'+
+        '<div class="dolap-sub">'+d.bolmeler.length+' bölme • '+cnt+' ürün'+(d.aciklama?' — '+e(d.aciklama):'')+'</div>'+
+        '<div class="dolap-bolmeler">'+d.bolmeler.map(b=>'<span class="dolap-sp">'+e(b)+'</span>').join('')+'</div>'+
+      '</div>'+
+      '<div class="dolap-acts">'+
+        '<button class="btn btn-sm btn-ed" onclick="openDolapEdit('+d.id+')">✏️ Düzenle</button>'+
+        '<button class="btn btn-sm btn-del" onclick="konfirmSilDolap('+d.id+')">🗑 Sil</button>'+
+      '</div>';
+    div.addEventListener('dragstart',ev=>{dragSrc=d.id;ev.dataTransfer.effectAllowed='move';});
+    div.addEventListener('dragover',ev=>{ev.preventDefault();div.classList.add('drag-over');});
+    div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+    div.addEventListener('drop',ev=>{
+      ev.preventDefault();div.classList.remove('drag-over');
+      if(dragSrc===d.id)return;
+      const s=db.dolaplar.find(x=>x.id===dragSrc);const t=db.dolaplar.find(x=>x.id===d.id);
+      if(!s||!t)return;const s1=s.sira,s2=t.sira;s.sira=s2;t.sira=s1;
+      try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}sbAyarKaydet();renderDolaplar();
+    });
+    list.appendChild(div);
+  });
+}
+
+// ---- Durum seçimi ----
+let secilenDur='normal';
+function selDur(tip){
+  secilenDur=tip;
+  ['ok','low','out','one'].forEach(k=>document.getElementById('dur-'+k).className='dur-b');
+  const map={normal:'ok',kritik:'low',tuikendi:'out',onemsiz:'one'};
+  const k=map[tip]||'ok';
+  document.getElementById('dur-'+k).className='dur-b sel-'+k;
+}
+
+// ---- Ürün Modal ----
+let editUID=null;
+function openUrunModal(id=null){
+  editUID=id;
+  fillDolapSel('fu-dolap','');
+  if(id){
+    const u=db.urunler.find(x=>x.id===id);
+    document.getElementById('m-u-t').textContent='Ürünü Düzenle';
+    document.getElementById('fu-ad').value=u.ad||'';
+    document.getElementById('fu-marka').value=u.marka||'';
+    document.getElementById('fu-birim').value=u.birim||'Adet';
+    document.getElementById('fu-kat').value=u.kat||'Elektronik';
+    document.getElementById('fu-mevcut').value=u.mevcut||0;
+    document.getElementById('fu-cikan').value=u.cikan||0;
+    document.getElementById('fu-min').value=u.min||0;
+    document.getElementById('fu-dolap').value=u.dolap||'';
+    fillBolmeSel('fu-bolme',u.dolap,u.bolme);
+    document.getElementById('fu-loknot').value=u.loknot||'';
+    document.getElementById('fu-sku').value=u.sku||'';
+    document.getElementById('fu-ted').value=u.tedarik||'';
+    document.getElementById('fu-not').value=u.not||'';
+    selDur(u.durum_tip||'normal');
+  } else {
+    document.getElementById('m-u-t').textContent='Yeni Ürün';
+    ['fu-ad','fu-loknot','fu-sku','fu-ted'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('fu-marka').value='';document.getElementById('fu-not').value='';
+    document.getElementById('fu-mevcut').value='';document.getElementById('fu-cikan').value='';
+    document.getElementById('fu-min').value=0;
+    document.getElementById('fu-dolap').value='';
+    document.getElementById('fu-bolme').innerHTML='<option value="">— Dolap seçin —</option>';
+    selDur('normal');
+  }
+  OM('m-u');setTimeout(()=>document.getElementById('fu-ad').focus(),60);
+}
+
+function onDC(){
+  const d=document.getElementById('fu-dolap').value;
+  fillBolmeSel('fu-bolme',d,'');
+
+}
+
+function fillDolapSel(sid,sv){
+  const s=document.getElementById(sid);
+  const sorted=[...db.dolaplar].sort((a,b)=>(a.sira||0)-(b.sira||0));
+  s.innerHTML='<option value="">— Seçiniz —</option>'+sorted.map(d=>'<option'+(d.ad===(sv||'')?' selected':'')+'>'+e(d.ad)+'</option>').join('');
+}
+function fillBolmeSel(sid,dAd,sv){
+  const s=document.getElementById(sid);
+  const d=db.dolaplar.find(x=>x.ad===dAd);
+  if(!d){s.innerHTML='<option value="">— Dolap seçin —</option>';return;}
+  s.innerHTML='<option value="">— Seçiniz —</option>'+d.bolmeler.map(b=>'<option'+(b===(sv||'')?' selected':'')+'>'+e(b)+'</option>').join('');
+}
+
+function saveUrun(){
+  const ad=document.getElementById('fu-ad').value.trim();
+  if(!ad){document.getElementById('fu-ad').focus();toast('❗ Ürün adı zorunludur!');return;}
+  const dolapAd=document.getElementById('fu-dolap').value;
+  const data={
+    ad,marka:document.getElementById('fu-marka').value.trim(),
+    birim:document.getElementById('fu-birim').value,kat:document.getElementById('fu-kat').value,
+    mevcut:parseInt(document.getElementById('fu-mevcut').value)||0,
+    cikan:parseInt(document.getElementById('fu-cikan').value)||0,
+    min:parseInt(document.getElementById('fu-min').value)||0,
+    dolap:dolapAd,bolme:document.getElementById('fu-bolme').value,
+    loknot:document.getElementById('fu-loknot').value.trim(),
+    sku:document.getElementById('fu-sku').value.trim(),
+    tedarik:document.getElementById('fu-ted').value.trim(),
+    not:document.getElementById('fu-not').value.trim(),
+    durum_tip:secilenDur,
+  };
+  var kayitId;
+  if(editUID){
+    const u=db.urunler.find(x=>x.id===editUID);
+    if(dolapAd && u.dolap !== dolapAd){
+      data.sira_dolap = nextSiraForDolap(dolapAd);
+    }
+    Object.assign(u,data);
+    kayitId=editUID;
+    toast('✅ Ürün güncellendi');
+  } else {
+    const sira=dolapAd?nextSiraForDolap(dolapAd):1;
+    kayitId=db.nextId++;
+    db.urunler.push({id:kayitId,sira_dolap:sira,...data});
+    toast('✅ Ürün eklendi');
+  }
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
+  sbUrunKaydetTek(kayitId);
+  sbAyarKaydet();
+  CM('m-u');renderStok();
+}
+function konfirmSilUrun(id){
+  const u=db.urunler.find(x=>x.id===id);
+  konfirm('Ürünü Sil','"'+u.ad+'" silinecek. Bu işlem geri alınamaz.','🗑 Sil',()=>{
+    db.urunler=db.urunler.filter(x=>x.id!==id);if(typeof sbUrunSilBulut==='function')sbUrunSilBulut(id);try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}sbAyarKaydet();renderStok();toast('🗑 Ürün silindi');
+  });
+}
+
+// ---- TAŞIMA ----
+let tasimaUID=null;
+function openTasima(id){
+  tasimaUID=id;
+  const u=db.urunler.find(x=>x.id===id);
+  document.getElementById('tasima-info').textContent='📦 '+u.ad+(u.dolap?' — Mevcut konum: '+u.dolap+(u.bolme?' / '+u.bolme:''):'');
+  fillDolapSel('tf-dolap',u.dolap||'');
+  fillBolmeSel('tf-bolme',u.dolap,u.bolme);
+  document.getElementById('tf-not').value=u.loknot||'';
+  document.getElementById('tasima-sira-note').style.display='none';
+  OM('m-t');
+}
+function onTC(){
+  const d=document.getElementById('tf-dolap').value;
+  fillBolmeSel('tf-bolme',d,'');
+  if(d&&tasimaUID){
+    const n=nextSiraForDolap(d);
+    const note=document.getElementById('tasima-sira-note');
+    note.style.display='block';
+    note.textContent='Bu ürün "'+d+'" dolabına taşınacak. Dolap içi sıra: '+n;
+  } else {
+    document.getElementById('tasima-sira-note').style.display='none';
+  }
+}
+function saveTasima(){
+  const dolapAd=document.getElementById('tf-dolap').value;
+  const bolme=document.getElementById('tf-bolme').value;
+  if(!dolapAd){toast('❗ Hedef dolap seçin!');return;}
+  const u=db.urunler.find(x=>x.id===tasimaUID);
+  const eskiDolap=u.dolap;
+  const sira=nextSiraForDolap(dolapAd);
+  const eskiSira=u.sira_dolap;
+  u.dolap=dolapAd;u.bolme=bolme;u.loknot=document.getElementById('tf-not').value.trim();u.sira_dolap=sira;
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
+  sbUrunKaydetTek(u.id);CM('m-t');renderStok();
+  toast('📦 '+u.ad+' → '+dolapAd+(bolme?' / '+bolme:''));
+}
+
+// ---- Hareket Modal ----
+let harTip='cikan';
+function sHT(t){harTip=t;document.getElementById('hf-tip').value=t;
+  document.getElementById('ht-c').className='ht-b'+(t==='cikan'?' sc':'');
+  document.getElementById('ht-g').className='ht-b'+(t==='giris'?' sg':'');
+  document.getElementById('ht-d').className='ht-b'+(t==='duzeltme'?' sd':'');
+  document.getElementById('duz-note').style.display=t==='duzeltme'?'block':'none';
+  document.getElementById('hf-ml').textContent=t==='duzeltme'?'Yeni Kalan *':'Miktar *';
+}
+function openHarModal(uid=null){
+  const sel=document.getElementById('hf-u');
+  const sorted=[...db.dolaplar].sort((a,b)=>(a.sira||0)-(b.sira||0));
+  const dolapOrder=sorted.map(d=>d.ad);
+  const sortedU=[...db.urunler].sort((a,b)=>{const ai=dolapOrder.indexOf(a.dolap),bi=dolapOrder.indexOf(b.dolap);if(ai!==bi)return ai-bi;return a.id-b.id;});
+  sel.innerHTML='<option value="">— Ürün seçin —</option>'+sortedU.map(u=>'<option value="'+u.id+'"'+(u.id===uid?' selected':'')+'>#'+u.id+' '+e(u.ad)+'</option>').join('');
+  document.getElementById('hf-mik').value='';document.getElementById('hf-ac').value='';document.getElementById('hf-yp').value='';
+  document.getElementById('hf-tar').value=new Date().toISOString().slice(0,10);
+  sHT('cikan');OM('m-h');
+}
+function saveHar(){
+  const uid=parseInt(document.getElementById('hf-u').value);
+  const mik=parseInt(document.getElementById('hf-mik').value)||0;
+  const tip=document.getElementById('hf-tip').value;
+  if(!uid){toast('❗ Ürün seçin!');return;}
+  if(mik<0){toast('❗ Geçerli miktar!');return;}
+  const u=db.urunler.find(x=>x.id===uid);
+  if(tip==='cikan'){if(mik>kalan(u)){toast('❗ Kalan stoktan fazla! Kalan: '+kalan(u));return;}u.cikan=(u.cikan||0)+mik;}
+  else if(tip==='giris'){u.mevcut+=mik;}
+  else{u.mevcut=mik+(u.cikan||0);}
+  db.hareketler.push({id:db.nextHarId++,urunId:uid,tip,miktar:mik,tarih:document.getElementById('hf-tar').value,aciklama:document.getElementById('hf-ac').value.trim(),yapan:document.getElementById('hf-yp').value.trim(),ts:Date.now()});
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
+  sbUrunKaydetTek(uid);sbAyarKaydet();CM('m-h');renderStok();
+  if(document.getElementById('page-har').classList.contains('on'))renderHar();
+  toast('✅ Hareket kaydedildi');
+}
+
+// ---- Hareket Düzenle ----
+let editHID=null;
+function openHarEdit(id){
+  editHID=id;const h=db.hareketler.find(x=>x.id===id);
+  document.getElementById('hef-tip').value=h.tip;
+  document.getElementById('hef-mik').value=h.miktar;
+  document.getElementById('hef-tar').value=h.tarih||(new Date().toISOString().slice(0,10));
+  document.getElementById('hef-ac').value=h.aciklama||'';
+  document.getElementById('hef-yp').value=h.yapan||'';
+  OM('m-he');
+}
+function saveHarEdit(){
+  const h=db.hareketler.find(x=>x.id===editHID);
+  const eT=h.tip,eM=h.miktar,nT=document.getElementById('hef-tip').value,nM=parseInt(document.getElementById('hef-mik').value)||0;
+  const u=db.urunler.find(x=>x.id===h.urunId);
+  if(u){
+    if(eT==='cikan')u.cikan=Math.max(0,(u.cikan||0)-eM);
+    else if(eT==='giris')u.mevcut=Math.max(0,u.mevcut-eM);
+    if(nT==='cikan'){if(nM>kalan(u)){toast('❗ Kalan stoktan fazla!');if(eT==='cikan')u.cikan=(u.cikan||0)+eM;else if(eT==='giris')u.mevcut+=eM;return;}u.cikan=(u.cikan||0)+nM;}
+    else if(nT==='giris')u.mevcut+=nM;
+    else u.mevcut=nM+(u.cikan||0);
+  }
+  h.tip=nT;h.miktar=nM;h.tarih=document.getElementById('hef-tar').value;h.aciklama=document.getElementById('hef-ac').value.trim();h.yapan=document.getElementById('hef-yp').value.trim();
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}
+  if(u)sbUrunKaydetTek(u.id);sbAyarKaydet();CM('m-he');renderHar();renderStok();toast('✅ Hareket güncellendi');
+}
+function konfirmSilHar(id){
+  konfirm('Hareketi Sil','Bu hareket silinecek ve stok etkisi geri alınacak.','🗑 Sil',()=>{
+    const h=db.hareketler.find(x=>x.id===id);const u=db.urunler.find(x=>x.id===h.urunId);
+    if(u){if(h.tip==='cikan')u.cikan=Math.max(0,(u.cikan||0)-h.miktar);else if(h.tip==='giris')u.mevcut=Math.max(0,u.mevcut-h.miktar);}
+    db.hareketler=db.hareketler.filter(x=>x.id!==id);try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}if(u)sbUrunKaydetTek(u.id);sbAyarKaydet();renderHar();renderStok();toast('🗑 Hareket silindi');
+  });
+}
+
+// ---- Dolap CRUD ----
+let editDID=null;
+function openDolapModal(){
+  ['df-ad','df-ac'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('df-bol').value='1. Raf, 2. Raf, 3. Raf, 4. Raf, 5. Raf';
+  document.getElementById('m-d-t').textContent='Dolap Ekle';
+  OM('m-d');setTimeout(()=>document.getElementById('df-ad').focus(),60);
+}
+function saveDolap(){
+  const ad=document.getElementById('df-ad').value.trim();
+  if(!ad){toast('❗ Dolap adı zorunludur!');return;}
+  const bs=document.getElementById('df-bol').value.trim();
+  let bolmeler=bs?bs.split(',').map(b=>b.trim()).filter(Boolean):['1. Raf','2. Raf','3. Raf','4. Raf','5. Raf'];
+  while(bolmeler.length<5)bolmeler.push((bolmeler.length+1)+'. Raf');
+  bolmeler=bolmeler.slice(0,5);
+  const maxSira=db.dolaplar.reduce((mx,d)=>Math.max(mx,d.sira||0),0);
+  db.dolaplar.push({id:db.nextDolapId++,ad,sira:maxSira+1,bolmeler,aciklama:document.getElementById('df-ac').value.trim()});
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}sbAyarKaydet();CM('m-d');renderDolaplar();toast('✅ Dolap eklendi');
+}
+function openDolapEdit(id){
+  editDID=id;const d=db.dolaplar.find(x=>x.id===id);
+  document.getElementById('def-ad').value=d.ad;
+  document.getElementById('def-bol').value=d.bolmeler.join(', ');
+  document.getElementById('def-ac').value=d.aciklama||'';
+  OM('m-de');
+}
+function saveDolapEdit(){
+  const d=db.dolaplar.find(x=>x.id===editDID);
+  const yeniAd=document.getElementById('def-ad').value.trim();
+  if(!yeniAd){toast('❗ Dolap adı zorunludur!');return;}
+  const eskiAd=d.ad;
+  const bs=document.getElementById('def-bol').value.trim();
+  let bolmeler=bs?bs.split(',').map(b=>b.trim()).filter(Boolean):['1. Raf','2. Raf','3. Raf','4. Raf','5. Raf'];
+  while(bolmeler.length<5)bolmeler.push((bolmeler.length+1)+'. Raf');
+  bolmeler=bolmeler.slice(0,5);
+  if(yeniAd!==eskiAd)db.urunler.forEach(u=>{if(u.dolap===eskiAd)u.dolap=yeniAd;});
+  d.ad=yeniAd;d.bolmeler=bolmeler;d.aciklama=document.getElementById('def-ac').value.trim();
+  try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}sbAyarKaydet();CM('m-de');renderDolaplar();renderStok();toast('✅ Dolap güncellendi');
+}
+function konfirmSilDolap(id){
+  const d=db.dolaplar.find(x=>x.id===id);
+  const cnt=db.urunler.filter(u=>u.dolap===d.ad).length;
+  if(cnt>0){toast('❗ '+d.ad+' içinde '+cnt+' ürün var. Önce ürünleri taşıyın.',4000);return;}
+  konfirm('Dolabı Sil','"'+d.ad+'" silinecek.','🗑 Sil',()=>{db.dolaplar=db.dolaplar.filter(x=>x.id!==id);try{localStorage.setItem(DB_KEY,JSON.stringify(db));updDBInfo();}catch(e){}sbAyarKaydet();renderDolaplar();toast('🗑 Dolap silindi');});
+}
+
+// ---- Excel ----
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  const hdr=['SIRA NO','ÜRÜN ADI','MARKA, MODELİ VE ÖZELİKLERİ','BİRİM','KATEGORİ','MEVCUT','ÇIKAN','KALAN','DOLAP NO','BÖLME NO','DURUM','KRİTİK EŞİK','BARKOD/SKU','TEDARİKÇİ','NOTLAR'];
+  const rows=[hdr,...db.urunler.map(u=>[u.id,u.ad,u.marka||'',u.birim,u.kat||'',u.mevcut,u.cikan||0,kalan(u),u.dolap||'',u.bolme||'',durum(u).l,u.min||0,u.sku||'',u.tedarik||'',u.not||''])];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[4,30,36,7,14,7,7,7,16,10,10,8,13,17,18].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Ürün Listesi');
+  const hh=['TARİH','SAAT','ÜRÜN ID','ÜRÜN ADI','DOLAP','BÖLME','TİP','MİKTAR','BİRİM','AÇIKLAMA','YAPAN'];
+  const hr=[hh,...[...db.hareketler].sort((a,b)=>b.ts-a.ts).map(h=>{const u=db.urunler.find(x=>x.id===h.urunId);const dt=new Date(h.ts);return[dt.toLocaleDateString('tr-TR'),dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),h.urunId,u?u.ad:'',u?u.dolap||'':'',u?u.bolme||'':'',h.tip==='cikan'?'Çıkış':h.tip==='giris'?'Giriş':'Düzeltme',h.miktar,u?u.birim:'',h.aciklama||'',h.yapan||''];})];
+  const ws2=XLSX.utils.aoa_to_sheet(hr);ws2['!cols']=[10,7,7,28,16,10,10,7,7,28,16].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Hareket Geçmişi');
+  XLSX.writeFile(wb,'teknik_envanter_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('📊 Excel indirildi!');
+}
+function triggerImport(){document.getElementById('imp-xl').click();}
+function handleXL(ev){const file=ev.target.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{const wb=XLSX.read(e.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1}).slice(1).filter(r=>r[1]);let cnt=0;rows.forEach(r=>{db.urunler.push({id:db.nextId++,sira_dolap:0,ad:String(r[1]||''),marka:String(r[2]||''),birim:String(r[3]||'Adet'),kat:String(r[4]||'Diğer'),mevcut:parseInt(r[5])||0,cikan:parseInt(r[6])||0,min:parseInt(r[11])||0,dolap:String(r[8]||''),bolme:String(r[9]||''),loknot:'',sku:String(r[12]||''),tedarik:String(r[13]||''),not:String(r[14]||''),durum_tip:'normal'});cnt++;});saveDB();renderStok();toast('✅ '+cnt+' ürün içe aktarıldı!');};r.readAsArrayBuffer(file);ev.target.value='';}
+function yedekle(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='envanter_yedek_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('💾 Yedek indirildi!');}
+function geriYukle(){document.getElementById('imp-js').click();}
+function handleJSON(ev){const file=ev.target.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{try{const p=JSON.parse(e.target.result);if(!p.urunler)throw 0;if(!confirm('Mevcut veriler silinecek, '+p.urunler.length+' ürün yüklenecek. Devam?'))return;db=p;saveDB();renderStok();toast('✅ '+db.urunler.length+' ürün geri yüklendi!');}catch(e){toast('❌ Geçersiz dosya!');}};r.readAsText(file);ev.target.value='';}
+
+// ---- Page nav ----
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.sb-a').forEach(a=>a.classList.remove('on'));
+  var pg=document.getElementById('page-'+n);
+  if(pg)pg.classList.add('on');
+  var ni=document.getElementById('nav-'+n);if(ni)ni.classList.add('on');
+  /* kullanici sayfasi nav-ku id'sini kullanir */
+  if(n==='kullanici'){var nk=document.getElementById('nav-ku');if(nk)nk.classList.add('on');}
+  var tl={stok:'Ürün Listesi',har:'Hareket Geçmişi',dolap:'Dolap & Bölme Yönetimi',kullanici:'Kullanıcı Yönetimi'};
+  var pt=document.getElementById('page-title');if(pt)pt.textContent=tl[n]||'';
+  var by=document.getElementById('btn-yeni');if(by)by.style.display=n==='stok'?'':'none';
+  try{
+    if(n==='har')renderHar();
+    else if(n==='dolap')renderDolaplar();
+    else if(n==='kullanici')renderKullanicilar();
+  }catch(err){ console.log('Sayfa render hatasi:',err); alert('Hata: '+err.message); }
+}
+
+// ---- Modals ----
+function OM(id){document.getElementById(id).classList.add('on');}
+function CM(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',ev=>{if(ev.target===o)o.classList.remove('on');}));
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape')document.querySelectorAll('.ov.on').forEach(o=>o.classList.remove('on'));});
+
+// ---- Konfirm ----
+function konfirm(tit,msg,okL,fn){
+  document.getElementById('k-t').textContent=tit;document.getElementById('k-m').textContent=msg;
+  const btn=document.getElementById('k-ok');btn.textContent=okL;btn.onclick=()=>{CM('m-k');fn();};OM('m-k');
+}
+
+// ---- Toast ----
+let tt;
+function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),dur);}
+
+// ---- Esc ----
+function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* Bildirim kutusu disari tiklayinca kapansin */
+document.addEventListener('click',function(ev){
+  var box=document.getElementById('bell-box');
+  if(!box||box.style.display!=='block')return;
+  var t=ev.target;
+  /* zil butonu veya kutu icine tiklandiysa kapatma */
+  while(t){
+    if(t.id==='bell-box')return;
+    if(t.onclick&&String(t.onclick).indexOf('bildirimAc')>=0)return;
+    if(t.getAttribute&&t.getAttribute('title')==='Stok uyarilari')return;
+    t=t.parentNode;
+  }
+  box.style.display='none';
+}); /* bell-box-close-handler */
+
+// Init
+initSiraDolap();
+var loadOv=document.getElementById('sb-loading');
+if(loadOv) loadOv.style.display='flex';
+sbBaslat(function(){
+  initSiraDolap();
+  if(loadOv) loadOv.style.display='none';
+  sbRealtimeBaslat();
+  setTimeout(function(){try{document.getElementById('lg-u').focus();}catch(ex){}},200);
+});
+
+</script>
+</body>
+</html>
