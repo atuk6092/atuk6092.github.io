@@ -3048,6 +3048,7 @@ const OYUN_KATALOG = {
     {k:'frikik', ik:'🥅', ad:'Frikik (Serbest Vuruş)', ac:'Duvarı aş, kaleciyi geç, gol at!'},
     {k:'yaris3d', ik:'🏁', ad:'3D Araba Yarışı', ac:'Direksiyon, gaz, fren · 3 pist!'},
     {k:'penalti3d', ik:'🎯', ad:'3D Penaltı', ac:'Gerçek 3D kalede gol at!'},
+    {k:'frikik3d', ik:'🌀', ad:'3D Frikik', ac:'Barajı aş, falsolu vur!'},
     {k:'yaris', ik:'🏎️', ad:'Araba Yarışı', ac:'Direksiyonu çevir, sür!'},
     {k:'satranc', ik:'♟️', ad:'Satranç', ac:'2 kişi veya bilgisayara karşı!'},
   ]},
@@ -3148,6 +3149,7 @@ function oyunBasla(oyun) {
   else if(oyun === 'fen34') fen34Basla();
   else if(oyun === 'yaris3d') yaris3dBasla();
   else if(oyun === 'penalti3d') penalti3dBasla();
+  else if(oyun === 'frikik3d') frikik3dBasla();
 }
 
 function oyunGeriDon() { tamEkranKapat(); renderOyunlar(); }
@@ -7562,6 +7564,17 @@ function p3Kur(){
     const st=new THREE.Mesh(new THREE.PlaneGeometry(80,4), new THREE.MeshLambertMaterial({color:0x4CAF50}));
     st.rotation.x=-Math.PI/2; st.position.set(0,0.01,-i*8); sah.add(st);
   }
+  // Tribün + seyirciler + reklam panosu (stadyum havası)
+  const trib=new THREE.Mesh(new THREE.BoxGeometry(60,10,4), new THREE.MeshLambertMaterial({color:0x37474F}));
+  trib.position.set(0,5,-26); sah.add(trib);
+  for(let i=0;i<72;i++){
+    const sy=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.3), new THREE.MeshLambertMaterial({color:[0xE53935,0x1E88E5,0xFDD835,0xffffff,0x43A047][i%5]}));
+    sy.position.set(-27+(i%24)*2.35, 2.2+Math.floor(i/24)*2.3, -23.9); sah.add(sy);
+  }
+  const pano=new THREE.Mesh(new THREE.BoxGeometry(30,1.1,0.3), new THREE.MeshLambertMaterial({color:0x1565C0}));
+  pano.position.set(0,0.55,-19.6); sah.add(pano);
+  const yanFM=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.18,side:THREE.DoubleSide});
+  [[-3.7],[3.7]].forEach(p=>{ const yf=new THREE.Mesh(new THREE.PlaneGeometry(1.2,2.5), yanFM); yf.rotation.y=Math.PI/2; yf.position.set(p[0],1.28,-17.55); sah.add(yf); });
   // Kale (z=-17): direkler, üst direk, file
   const beyaz=new THREE.MeshLambertMaterial({color:0xffffff});
   const dG=new THREE.CylinderGeometry(0.12,0.12,2.6,8);
@@ -7617,6 +7630,7 @@ function p3Sut(hedefX,guc){
     s.top.position.z=-0.5+t*(-16.5);
     s.top.position.x=hedefX*t;
     s.top.position.y=0.36+Math.sin(t*Math.PI)*tepe;
+    s.top.rotation.x-=0.35;
     s.golge.position.x=s.top.position.x; s.golge.position.z=s.top.position.z;
     s.kaleci.position.x=kHedef*Math.min(1,t*1.5);
     s.kaleci.rotation.z=(kHedef!==0?(kHedef>0?-1:1)*Math.min(0.9,t*1.6):0);
@@ -7665,6 +7679,185 @@ function p3Bitir(){
   _p3=null;
 }
 function p3Cik(){ if(_p3){ _p3.bitti=true; if(_p3.raf)cancelAnimationFrame(_p3.raf); try{_p3.ren.dispose();}catch(e){} _p3=null; } tamEkranKapat(); oyunGeriDon(); }
+
+
+
+
+// ---------- 🌀 3D FRİKİK (baraj + falso) ----------
+let _f3=null;
+function frikik3dBasla(){
+  const el=document.getElementById('oyunlarList');
+  el.innerHTML=`
+    <div onclick="f3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">🌀 3D Frikik</div>
+      ${tamEkranBtn()}
+      <div style="font-weight:700;color:var(--p);margin-bottom:6px"><span id="f3Durum">Vuruş 1/5 • Gol: 0</span></div>
+      <div id="f3Kap" style="width:100%;max-width:340px;margin:0 auto;border-radius:12px;overflow:hidden;touch-action:none;border:3px solid #1B5E20;background:#87CEEB;min-height:200px">
+        <div style="padding:40px;color:#555">⏳ 3D motor yükleniyor...</div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--tm);margin-top:10px">👆 Yukarı kaydır: güç · Yana kaydır: <b>FALSO</b> (top kavis çizer). Barajın üstünden ya da yanından dolandır!</div>
+    </div>`;
+  threeYukle().then(f3Kur).catch(()=>{
+    const k=document.getElementById('f3Kap');
+    if(k) k.innerHTML='<div style="padding:30px;color:#E53935">❌ 3D motor yüklenemedi.</div>';
+  });
+}
+function f3Kur(){
+  const kap=document.getElementById('f3Kap'); if(!kap) return;
+  kap.innerHTML='';
+  const w=kap.clientWidth||320, h=Math.round(w*1.1);
+  const ren=new THREE.WebGLRenderer({antialias:true});
+  ren.setSize(w,h); ren.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  kap.appendChild(ren.domElement);
+  const sah=new THREE.Scene();
+  sah.background=new THREE.Color(0x87CEEB);
+  sah.fog=new THREE.Fog(0x87CEEB,35,110);
+  const kam=new THREE.PerspectiveCamera(62,w/h,0.1,160);
+  kam.position.set(0,2.9,7.5); kam.lookAt(0,1.6,-22);
+  sah.add(new THREE.HemisphereLight(0xffffff,0x55aa55,1.0));
+  const gun=new THREE.DirectionalLight(0xffffff,0.6); gun.position.set(6,18,8); sah.add(gun);
+  const cim=new THREE.Mesh(new THREE.PlaneGeometry(90,140), new THREE.MeshLambertMaterial({color:0x43A047}));
+  cim.rotation.x=-Math.PI/2; sah.add(cim);
+  for(let i=0;i<8;i++){
+    const st=new THREE.Mesh(new THREE.PlaneGeometry(90,4), new THREE.MeshLambertMaterial({color:0x4CAF50}));
+    st.rotation.x=-Math.PI/2; st.position.set(0,0.01,-i*9); sah.add(st);
+  }
+  // Tribün
+  const trib=new THREE.Mesh(new THREE.BoxGeometry(64,11,4), new THREE.MeshLambertMaterial({color:0x37474F}));
+  trib.position.set(0,5.5,-31); sah.add(trib);
+  for(let i=0;i<72;i++){
+    const sy=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.3), new THREE.MeshLambertMaterial({color:[0xE53935,0x1E88E5,0xFDD835,0xffffff,0x43A047][i%5]}));
+    sy.position.set(-28+(i%24)*2.4, 2.4+Math.floor(i/24)*2.4, -28.9); sah.add(sy);
+  }
+  // Kale (z=-22)
+  const beyaz=new THREE.MeshLambertMaterial({color:0xffffff});
+  const dG=new THREE.CylinderGeometry(0.12,0.12,2.6,8);
+  [[-3.7],[3.7]].forEach(p=>{ const d=new THREE.Mesh(dG,beyaz); d.position.set(p[0],1.3,-22); sah.add(d); });
+  const ust=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,7.6,8),beyaz);
+  ust.rotation.z=Math.PI/2; ust.position.set(0,2.55,-22); sah.add(ust);
+  const file=new THREE.Mesh(new THREE.PlaneGeometry(7.4,2.5), new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.22,side:THREE.DoubleSide}));
+  file.position.set(0,1.28,-22.6); sah.add(file);
+  // Kaleci
+  const kaleci=new THREE.Group();
+  const kg=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,0.45), new THREE.MeshLambertMaterial({color:0xFF7043}));
+  kg.position.y=1.15; kaleci.add(kg);
+  const kk=new THREE.Mesh(new THREE.SphereGeometry(0.3,10,10), new THREE.MeshLambertMaterial({color:0xFFCC80}));
+  kk.position.y=2.15; kaleci.add(kk);
+  kaleci.position.set(0,0,-21.3); sah.add(kaleci);
+  // Baraj duvarı (4 oyuncu) — her vuruşta yeri değişir
+  const baraj=new THREE.Group();
+  const oyuncuXler=[-1.2,-0.4,0.4,1.2];
+  oyuncuXler.forEach(px=>{
+    const g=new THREE.Group();
+    const gv=new THREE.Mesh(new THREE.BoxGeometry(0.75,1.7,0.4), new THREE.MeshLambertMaterial({color:0x1E88E5}));
+    gv.position.y=0.95; g.add(gv);
+    const kf=new THREE.Mesh(new THREE.SphereGeometry(0.27,10,10), new THREE.MeshLambertMaterial({color:0xFFCC80}));
+    kf.position.y=2.05; g.add(kf);
+    g.position.x=px; baraj.add(g);
+  });
+  baraj.position.set(0,0,-9); sah.add(baraj);
+  // Top + gölge
+  const top=new THREE.Mesh(new THREE.SphereGeometry(0.36,14,14), new THREE.MeshLambertMaterial({color:0xffffff}));
+  top.position.set(0,0.36,0); sah.add(top);
+  const golge=new THREE.Mesh(new THREE.CircleGeometry(0.34,12), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.25}));
+  golge.rotation.x=-Math.PI/2; golge.position.set(0,0.013,0); sah.add(golge);
+  _f3={ren,sah,kam,top,golge,kaleci,baraj,oyuncuXler,gol:0,atis:0,toplam:5,anim:false,bitti:false,raf:null,basla:null,barajC:0};
+  f3BarajYenile();
+  kap.onpointerdown=(e)=>{ if(!_f3||_f3.anim||_f3.bitti)return; _f3.basla={x:e.clientX,y:e.clientY}; };
+  kap.onpointerup=(e)=>{ f3Birak(e.clientX,e.clientY,kap); };
+  kap.ontouchstart=(e)=>{ if(!_f3||_f3.anim||_f3.bitti)return; const t=e.touches[0]; _f3.basla={x:t.clientX,y:t.clientY}; if(e.cancelable)e.preventDefault(); };
+  kap.ontouchend=(e)=>{ const t=e.changedTouches[0]; f3Birak(t.clientX,t.clientY,kap); if(e.cancelable)e.preventDefault(); };
+  f3Render();
+}
+function f3BarajYenile(){
+  const s=_f3; if(!s)return;
+  s.barajC=[-1.6,0,1.6][Math.floor(Math.random()*3)];
+  s.baraj.position.x=s.barajC;
+}
+function f3Render(){ const s=_f3; if(!s||s.bitti)return; s.ren.render(s.sah,s.kam); s.raf=requestAnimationFrame(f3Render); }
+function f3Birak(cx,cy,kap){
+  const s=_f3; if(!s||s.anim||s.bitti||!s.basla)return;
+  const dx=cx-s.basla.x, dy=cy-s.basla.y;
+  s.basla=null;
+  if(dy>-22) return;
+  const r=kap.getBoundingClientRect();
+  const hedefX=Math.max(-3.4,Math.min(3.4,(dx/r.width)*10));
+  const buk=Math.max(-2.2,Math.min(2.2,(dx/r.width)*5));
+  const guc=Math.max(0.5,Math.min(1.4,(-dy)/(r.height*0.55)));
+  f3Sut(hedefX,buk,guc);
+}
+function f3Sut(hedefX,buk,guc){
+  const s=_f3; s.anim=true;
+  const tepe=1.1+guc*1.9;
+  const kHedef=[-2.3,0,2.3][Math.floor(Math.random()*3)];
+  // Baraj kontrolü (z=-9 → t≈0.418)
+  const tw=9/21.5;
+  const xw=hedefX*tw+buk*Math.sin(tw*Math.PI);
+  const yw=0.36+Math.sin(tw*Math.PI)*tepe;
+  const barajda = yw<2.1 && s.oyuncuXler.some(px=>Math.abs(xw-(px+s.barajC))<0.55);
+  let t=0;
+  const adim=()=>{
+    if(!_f3) return;
+    t+=0.03+guc*0.012;
+    const tSon = barajda ? tw : 1;
+    if(t>=tSon){ f3Sonuc(hedefX,buk,tepe,kHedef,barajda); return; }
+    s.top.position.z=t*(-21.5);
+    s.top.position.x=hedefX*t+buk*Math.sin(t*Math.PI);
+    s.top.position.y=0.36+Math.sin(t*Math.PI)*tepe;
+    s.top.rotation.x-=0.35; s.top.rotation.y=buk*0.2;
+    s.golge.position.x=s.top.position.x; s.golge.position.z=s.top.position.z;
+    if(!barajda){ s.kaleci.position.x=kHedef*Math.min(1,Math.max(0,(t-0.45))*2.4); s.kaleci.rotation.z=(kHedef!==0?(kHedef>0?-1:1)*Math.min(0.9,Math.max(0,(t-0.45))*2.6):0); }
+    requestAnimationFrame(adim);
+  };
+  adim();
+}
+function f3Sonuc(hedefX,buk,tepe,kHedef,barajda){
+  const s=_f3;
+  let gol=false, msg='';
+  if(barajda){ msg='🧱 Barajda kaldı! Daha yükseğe ya da yana falso ver.'; Sound.play('tick'); }
+  else {
+    const xf=hedefX+buk*Math.sin(0.985*Math.PI);
+    const yf=0.36+Math.sin(0.985*Math.PI)*tepe;
+    const direk=Math.abs(Math.abs(xf)-3.6)<0.28;
+    const kurtardi=Math.abs(xf-kHedef)<1.15 && yf<2.15;
+    if(direk){ msg='🪵 Direğe çarptı!'; Sound.play('tick'); }
+    else if(Math.abs(xf)>3.55){ msg='😅 Auta gitti!'; }
+    else if((0.36+tepe)>2.9 && yf>2.3){ msg='⬆️ Üstten auta!'; }
+    else if(kurtardi){ msg='🧤 Kaleci kurtardı!'; }
+    else { gol=true; msg='🌀 GOOOL! Müthiş falso!'; }
+  }
+  notify(msg, gol?'success':'error');
+  if(gol) s.gol++;
+  s.atis++;
+  setTimeout(()=>{
+    if(!_f3) return;
+    if(s.atis>=s.toplam){ f3Bitir(); return; }
+    s.top.position.set(0,0.36,0); s.top.rotation.set(0,0,0);
+    s.golge.position.set(0,0.013,0);
+    s.kaleci.position.x=0; s.kaleci.rotation.z=0;
+    f3BarajYenile();
+    s.anim=false;
+    const d=document.getElementById('f3Durum');
+    if(d) d.textContent=`Vuruş ${s.atis+1}/${s.toplam} • Gol: ${s.gol}`;
+  }, 950);
+}
+function f3Bitir(){
+  const s=_f3; if(!s)return;
+  s.bitti=true; if(s.raf)cancelAnimationFrame(s.raf);
+  if(s.gol>=3)cocukKutla('frikik');
+  const el=document.getElementById('oyunlarList');
+  el.innerHTML=`
+    <div onclick="f3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:3rem">${s.gol>=3?'🏆':'🌀'}</div>
+      <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">${s.toplam} vuruştan ${s.gol} GOL!</div>
+      <button onclick="frikik3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Tekrar Oyna</button>
+    </div>`;
+  try{ s.ren.dispose(); }catch(e){}
+  _f3=null;
+}
+function f3Cik(){ if(_f3){ _f3.bitti=true; if(_f3.raf)cancelAnimationFrame(_f3.raf); try{_f3.ren.dispose();}catch(e){} _f3=null; } tamEkranKapat(); oyunGeriDon(); }
 
 
 // ==================== ESMAÜL HÜSNA ====================
