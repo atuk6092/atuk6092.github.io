@@ -3047,7 +3047,6 @@ const OYUN_KATALOG = {
     {k:'penalti', ik:'⚽', ad:'Penaltı Atışı', ac:'Topu kaleye gönder, gol at!'},
     {k:'frikik', ik:'🥅', ad:'Frikik (Serbest Vuruş)', ac:'Duvarı aş, kaleciyi geç, gol at!'},
     {k:'yaris3d', ik:'🏁', ad:'3D Araba Yarışı', ac:'Direksiyon, gaz, fren · 3 pist!'},
-    {k:'penalti3d', ik:'🎯', ad:'3D Penaltı', ac:'Gerçek 3D kalede gol at!'},
     {k:'frikik3d', ik:'🌀', ad:'3D Frikik', ac:'Barajı aş, falsolu vur!'},
     {k:'yaris', ik:'🏎️', ad:'Araba Yarışı', ac:'Direksiyonu çevir, sür!'},
     {k:'satranc', ik:'♟️', ad:'Satranç', ac:'2 kişi veya bilgisayara karşı!'},
@@ -3148,7 +3147,6 @@ function oyunBasla(oyun) {
   else if(oyun === 'hayat34') hayat34Basla();
   else if(oyun === 'fen34') fen34Basla();
   else if(oyun === 'yaris3d') yaris3dBasla();
-  else if(oyun === 'penalti3d') penalti3dBasla();
   else if(oyun === 'frikik3d') frikik3dBasla();
 }
 
@@ -5665,21 +5663,49 @@ function p15Oyna(i){ const st=_p15State; const b=st.dizi.indexOf(0); if(p15Komsu
 // ---------- ⚽ OYUN 38: PENALTI (mod seçimli, gerçekçi) ----------
 let _penaltiState = null;
 function penaltiBasla() {
+  // Takım/ülke seçim ekranı
   const el = document.getElementById('oyunlarList');
   el.innerHTML = `
     <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
       <div class="card-title" style="justify-content:center">⚽ Penaltı Atışı</div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:12px 0 8px">Takımını seç:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${PENALTI_TAKIMLAR.map((t,i)=>`<button onclick="penaltiModSec(${i})" style="background:linear-gradient(135deg,#${t.r1.toString(16).padStart(6,'0')} 50%,#${t.r2.toString(16).padStart(6,'0')} 50%);color:#fff;border:none;padding:14px 6px;border-radius:12px;font-weight:800;font-size:0.82rem;cursor:pointer;text-shadow:0 1px 3px rgba(0,0,0,0.6)">${t.ad}</button>`).join('')}
+      </div>
+    </div>`;
+}
+const PENALTI_TAKIMLAR = [
+  {ad:'Galatasaray', r1:0xFDD835, r2:0xE53935, forma:0xFDD835},
+  {ad:'Fenerbahçe', r1:0x1565C0, r2:0xFDD835, forma:0x1565C0},
+  {ad:'Beşiktaş', r1:0x212121, r2:0xFFFFFF, forma:0xFFFFFF},
+  {ad:'Trabzonspor', r1:0x8B0000, r2:0x42A5F5, forma:0x8B0000},
+  {ad:'🇹🇷 Türkiye', r1:0xE30A17, r2:0xFFFFFF, forma:0xE30A17},
+  {ad:'🇫🇷 Fransa', r1:0x0055A4, r2:0xFFFFFF, forma:0x0055A4},
+  {ad:'🇦🇺 Avustralya', r1:0xFFD700, r2:0x00843D, forma:0x00843D},
+  {ad:'🇲🇦 Fas', r1:0xC1272D, r2:0x006233, forma:0xC1272D},
+  {ad:'🇧🇷 Brezilya', r1:0xFFDF00, r2:0x009C3B, forma:0xFFDF00},
+  {ad:'🇩🇪 Almanya', r1:0x000000, r2:0xDD0000, forma:0xFFFFFF},
+];
+let _penaltiTakim = 0;
+function penaltiModSec(takimIdx) {
+  _penaltiTakim = takimIdx;
+  // Mod seçimi
+  const el = document.getElementById('oyunlarList');
+  el.innerHTML = `
+    <div onclick="penaltiBasla()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Takım Seç</div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">⚽ ${PENALTI_TAKIMLAR[takimIdx].ad}</div>
       <div style="font-size:0.9rem;color:var(--tm);margin:14px 0">Nasıl oynamak istersin?</div>
-      <button onclick="penaltiOyna('cpu')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:700;font-size:1.05rem;margin-bottom:10px;cursor:pointer">🤖 Bilgisayara Karşı</button>
-      <button onclick="penaltiOyna('2p')" style="width:100%;background:#FF9800;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:700;font-size:1.05rem;cursor:pointer">👥 2 Kişilik</button>
+      <button onclick="penaltiOyna('cpu')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:700;font-size:1.05rem;margin-bottom:10px;cursor:pointer">🥅 Sen At, Kaleci Kurtarsın</button>
+      <button onclick="penaltiOyna('2p')" style="width:100%;background:#FF9800;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:700;font-size:1.05rem;cursor:pointer">👥 2 Kişilik (sırayla atış)</button>
     </div>`;
 }
 function penaltiOyna(mod) {
   _penaltiState = {
-    mod, toplam:5,
+    mod, toplam:5, takim:_penaltiTakim,
     p1Gol:0, p2Gol:0, p1Atis:0, p2Atis:0,
-    sira:'p1', faz:'atis', bitti:false, animasyon:false
+    sira:'p1', bitti:false, animasyon:false
   };
   penaltiGoster();
 }
@@ -5689,65 +5715,49 @@ function penaltiGoster() {
   if(st.bitti) {
     let mesaj='';
     if(st.mod==='cpu'){
-      const benim=st.p1Gol, bilg=st.p2Gol;
-      mesaj = benim>bilg?'🎉 Sen kazandın!':benim<bilg?'🤖 Bilgisayar kazandı!':'🤝 Berabere!';
-      mesaj += ` (${benim}-${bilg})`;
-      if(benim>=bilg) cocukKutla('penalti');
+      mesaj = `${st.toplam} atıştan ${st.p1Gol} GOL!`;
     } else {
       mesaj = st.p1Gol>st.p2Gol?'🎉 1. Oyuncu kazandı!':st.p1Gol<st.p2Gol?'🎉 2. Oyuncu kazandı!':'🤝 Berabere!';
       mesaj += ` (${st.p1Gol}-${st.p2Gol})`;
-      cocukKutla('penalti');
     }
     el.innerHTML = `
       <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
       <div class="card" style="text-align:center">
-        <div style="font-size:3rem">🏆</div>
+        <div style="font-size:3rem">${(st.mod==='cpu'?st.p1Gol>=3:true)?'🏆':'⚽'}</div>
         <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">${mesaj}</div>
         <button onclick="penaltiBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;margin-top:8px;cursor:pointer">🔄 Tekrar Oyna</button>
       </div>`;
+    if((st.mod==='cpu' && st.p1Gol>=3) || st.mod==='2p') cocukKutla('penalti');
     return;
   }
   const cpu = st.mod==='cpu';
   let durumYazi;
-  if(cpu){
-    if(st.sira==='p1'){ durumYazi='⚽ Atış sırası: SEN (kaleci: 🤖 Bilgisayar)'; st.faz='atis'; }
-    else { durumYazi='🤖 Bilgisayar atıyor — SEN kalecisin! Topun geleceği yere dokun.'; st.faz='kaleci'; }
-  } else {
-    if(st.sira==='p1'){ durumYazi='⚽ 1. Oyuncu atıyor (2. Oyuncu kaleci)'; }
-    else { durumYazi='⚽ 2. Oyuncu atıyor (1. Oyuncu kaleci)'; }
-    st.faz='atis';
-  }
-  const skor = cpu ? `Sen: ${st.p1Gol} • Bilgisayar: ${st.p2Gol}` : `1. Oyuncu: ${st.p1Gol} • 2. Oyuncu: ${st.p2Gol}`;
+  if(cpu){ durumYazi='⚽ Topu kaydırıp şut çek!'; }
+  else { durumYazi = st.sira==='p1' ? '⚽ 1. Oyuncu atıyor' : '⚽ 2. Oyuncu atıyor'; }
+  const skor = cpu ? `Gol: ${st.p1Gol}` : `1. Oyuncu: ${st.p1Gol} • 2. Oyuncu: ${st.p2Gol}`;
   const atisNo = st.sira==='p1' ? st.p1Atis+1 : st.p2Atis+1;
-  let ipucu = st.faz==='atis'
-    ? '👆 Topu istediğin yöne <b>kaydırıp bırak</b> (parmağını yukarı + sola/sağa sürükle).'
-    : '🧤 Kale tut! Topun geleceğini düşündüğün yere <b>dokun</b> (sol/orta/sağ üst bölgeler).';
   el.innerHTML = `
     <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
-      <div class="card-title" style="justify-content:center">⚽ Penaltı · ${cpu?'Bilgisayara Karşı':'2 Kişilik'}</div>
+      <div class="card-title" style="justify-content:center">⚽ ${PENALTI_TAKIMLAR[st.takim].ad}</div>
       ${tamEkranBtn()}
       <div style="font-weight:700;color:var(--p);margin-bottom:4px">${skor}</div>
       <div style="font-size:0.85rem;color:var(--tm);margin-bottom:6px">Atış ${Math.min(atisNo,st.toplam)} / ${st.toplam}</div>
-      <div style="font-size:0.95rem;font-weight:700;color:#FF9800;margin-bottom:8px;min-height:24px">${durumYazi}</div>
+      <div style="font-size:0.95rem;font-weight:700;color:#FF9800;margin-bottom:8px;min-height:22px">${durumYazi}</div>
       <div id="penSaha" style="position:relative;width:100%;max-width:340px;margin:0 auto;cursor:pointer;touch-action:none">
         <svg id="penSVG" viewBox="0 0 340 380" style="width:100%;height:auto;display:block;border-radius:12px"></svg>
-        ${st.faz==='kaleci'?`<div style="position:absolute;top:8%;left:16%;width:68%;height:42%;display:flex;border:2px dashed rgba(255,235,59,0.6);border-radius:4px">
-          <div onclick="penaltiKaleciSec(22)" style="flex:1;cursor:pointer;border-right:1px dashed rgba(255,235,59,0.5)"></div>
-          <div onclick="penaltiKaleciSec(50)" style="flex:1;cursor:pointer;border-right:1px dashed rgba(255,235,59,0.5)"></div>
-          <div onclick="penaltiKaleciSec(78)" style="flex:1;cursor:pointer"></div>
-        </div>`:''}
       </div>
-      <div id="penIpucu" style="font-size:0.82rem;color:var(--tm);margin:12px 0 0;line-height:1.5">${ipucu}</div>
+      <div id="penIpucu" style="font-size:0.82rem;color:var(--tm);margin:12px 0 0;line-height:1.5">👆 Topu istediğin yöne <b>kaydırıp bırak</b> (parmağını yukarı + sola/sağa sürükle). Ne kadar hızlı kaydırırsan o kadar sert!</div>
     </div>`;
   penaltiCiz(50, 12, 50, null);
-  if(st.faz==='atis') setTimeout(penaltiKontrolBagla, 50);
+  setTimeout(penaltiKontrolBagla, 50);
 }
 function penaltiCiz(topX, topY, kaleciX, futbolcuX) {
   const svg=document.getElementById('penSVG');
   if(!svg) return;
+  const st=_penaltiState;
+  const formaRenk = st ? '#'+PENALTI_TAKIMLAR[st.takim].forma.toString(16).padStart(6,'0') : '#1E88E5';
   const W=340, H=380;
-  // Üst %18 gökyüzü+tribün, kale alanı sonra
   const kaleSol=W*0.16, kaleGen=W*0.68, kaleUst=H*0.22, kaleY=H*0.50;
   const kalePx = kaleSol + (kaleciX/100)*kaleGen;
   const tx = (topX/100)*W;
@@ -5759,20 +5769,13 @@ function penaltiCiz(topX, topY, kaleciX, futbolcuX) {
       <linearGradient id="gokY" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#64B5F6"/><stop offset="100%" stop-color="#BBDEFB"/></linearGradient>
       <radialGradient id="cimGrad" cx="50%" cy="60%" r="80%"><stop offset="0%" stop-color="#81C784"/><stop offset="100%" stop-color="#388E3C"/></radialGradient>
     </defs>
-    <!-- Gökyüzü -->
     <rect x="0" y="0" width="${W}" height="${H*0.18}" fill="url(#gokY)"/>
-    <!-- Tribün arka -->
     <rect x="0" y="${H*0.14}" width="${W}" height="${H*0.10}" fill="#37474F"/>
-    <!-- Tribün koltuk desenleri (renkli noktalar) -->
     ${Array.from({length:60},(_,i)=>{const cx=(i*7)%W; const cy=H*0.15+(Math.floor(i/14)*5); const r=['#E53935','#1E88E5','#FDD835','#FFFFFF','#43A047'][i%5]; return `<rect x="${cx}" y="${cy}" width="4" height="3" fill="${r}" opacity="0.85"/>`;}).join('')}
-    <!-- Reklam panosu -->
     <rect x="0" y="${H*0.22}" width="${W}" height="${H*0.03}" fill="#1565C0"/>
     <text x="${W/2}" y="${H*0.247}" font-size="9" font-weight="700" text-anchor="middle" fill="#fff">⚽ FAIR PLAY ⚽</text>
-    <!-- Çim -->
     <rect x="0" y="${H*0.25}" width="${W}" height="${H*0.75}" fill="url(#cimGrad)"/>
     ${Array.from({length:10},(_,i)=>`<rect x="0" y="${H*0.25+i*H*0.075}" width="${W}" height="${H*0.038}" fill="${i%2?'#66BB6A':'#43A047'}" opacity="0.18"/>`).join('')}
-    <circle cx="${W/2}" cy="${H*0.86}" r="3.5" fill="#fff"/>
-    <path d="M${W*0.25},${H*0.66} Q${W/2},${H*0.58} ${W*0.75},${H*0.66}" fill="none" stroke="#fff" stroke-width="2" opacity="0.7"/>
     <rect x="${kaleSol}" y="${kaleUst}" width="${kaleGen}" height="${kaleY-kaleUst}" fill="rgba(0,0,0,0.08)"/>
     ${Array.from({length:9},(_, i)=>`<line x1="${kaleSol+i*kaleGen/8}" y1="${kaleUst}" x2="${kaleSol+i*kaleGen/8}" y2="${kaleY}" stroke="#fff" stroke-width="0.7" opacity="0.55"/>`).join('')}
     ${Array.from({length:6},(_, i)=>`<line x1="${kaleSol}" y1="${kaleUst+i*(kaleY-kaleUst)/5}" x2="${kaleSol+kaleGen}" y2="${kaleUst+i*(kaleY-kaleUst)/5}" stroke="#fff" stroke-width="0.7" opacity="0.55"/>`).join('')}
@@ -5795,8 +5798,8 @@ function penaltiCiz(topX, topY, kaleciX, futbolcuX) {
     ${topY<8?`<g transform="translate(${futbolcuPx},${H*0.95-66})">
       <circle cx="0" cy="0" r="9" fill="#FFE0B2"/>
       <path d="M-8,-2 Q0,-9 8,-2 L8,2 L-8,2 Z" fill="#3E2723"/>
-      <rect x="-12" y="9" width="24" height="28" rx="5" fill="#1E88E5"/>
-      <rect x="-12" y="9" width="24" height="5" fill="#1565C0"/>
+      <rect x="-12" y="9" width="24" height="28" rx="5" fill="${formaRenk}"/>
+      <rect x="-12" y="9" width="24" height="5" fill="rgba(0,0,0,0.2)"/>
       <rect x="-11" y="35" width="22" height="11" rx="2" fill="#fff"/>
       <rect x="-10" y="45" width="7" height="12" rx="2" fill="#FFE0B2"/>
       <rect x="3" y="45" width="7" height="12" rx="2" fill="#FFE0B2"/>
@@ -5810,78 +5813,67 @@ function penaltiCiz(topX, topY, kaleciX, futbolcuX) {
 function penaltiKontrolBagla() {
   const saha=document.getElementById('penSaha');
   if(!saha) return;
-  let basla=null;
-  const start=(e)=>{ const st=_penaltiState; if(!st||st.animasyon||st.faz!=='atis')return; const p=e.touches?e.touches[0]:e; basla={x:p.clientX,y:p.clientY}; if(e.cancelable)e.preventDefault(); };
+  let basla=null, baslaT=0;
+  const start=(e)=>{ const st=_penaltiState; if(!st||st.animasyon)return; const p=e.touches?e.touches[0]:e; basla={x:p.clientX,y:p.clientY}; baslaT=Date.now(); if(e.cancelable)e.preventDefault(); };
   const end=(e)=>{
-    const st=_penaltiState; if(!st||st.animasyon||st.faz!=='atis'||!basla)return;
+    const st=_penaltiState; if(!st||st.animasyon||!basla)return;
     const p=e.changedTouches?e.changedTouches[0]:e;
     const dx=p.clientX-basla.x, dy=p.clientY-basla.y;
+    const sure=Math.max(50,Date.now()-baslaT);
     basla=null;
     if(dy>-20){ return; }
     const r=saha.getBoundingClientRect();
     let hedefX = 50 + (dx/r.width)*120;
-    hedefX = Math.max(15,Math.min(85,hedefX));
-    penaltiSut(hedefX, null);
+    hedefX = Math.max(12,Math.min(88,hedefX));
+    // Hız → güç (hızlı kaydırma = sert vuruş = top daha yükseğe)
+    const hiz = Math.abs(dy)/sure;
+    const guc = Math.max(0.7, Math.min(1.5, hiz*8));
+    penaltiSut(hedefX, null, guc);
     if(e.cancelable)e.preventDefault();
   };
   saha.ontouchstart=start; saha.ontouchend=end;
   saha.onpointerdown=start; saha.onpointerup=end;
 }
-function penaltiKaleciSec(kaleciHedef) {
-  const st = _penaltiState;
-  if(!st || st.animasyon || st.faz!=='kaleci') return;
-  // Bilgisayar atış yapar — rastgele yön ile (kaleci hedefini bilmiyormuş gibi)
-  const atisYonu = [22,50,78][Math.floor(Math.random()*3)] + (Math.random()*16-8);
-  penaltiSut(Math.max(15,Math.min(85,atisYonu)), kaleciHedef);
-}
-function penaltiSut(hedefX, kaleciOnceden) {
+function penaltiSut(hedefX, kaleciOnceden, guc) {
   const st=_penaltiState;
   if(st.animasyon) return;
   st.animasyon=true;
+  guc = guc||1;
   const ipc=document.getElementById('penIpucu'); if(ipc) ipc.innerHTML='⚽ Şut!';
-  let kaleciHedef;
-  if(kaleciOnceden !== null && kaleciOnceden !== undefined){
-    kaleciHedef = kaleciOnceden;
-  } else {
-    kaleciHedef = [22,50,78][Math.floor(Math.random()*3)];
-  }
-  // Direk çarpma kontrolü: hedefX 100 ölçeği, kale direkleri ~16 ve ~84 konumunda
-  // Direk eni dar, ±2.5 birim civarı çarpışma
-  const solDirek = 16, sagDirek = 84;
-  const direkToleransi = 2.8;
-  const direkSol = Math.abs(hedefX - solDirek) < direkToleransi;
-  const direkSag = Math.abs(hedefX - sagDirek) < direkToleransi;
-  const direkUst = false; // basitleştirme: üst direk yok
-  const direkCarpti = direkSol || direkSag || direkUst;
+  // Kaleci HER ZAMAN otomatik rastgele atlar (kaleci seçeneği yok)
+  const kaleciHedef = [22,50,78][Math.floor(Math.random()*3)];
+  // Direk kontrolü
+  const solDirek = 16, sagDirek = 84, direkTol = 2.8;
+  const direkCarpti = Math.abs(hedefX-solDirek)<direkTol || Math.abs(hedefX-sagDirek)<direkTol;
   let t=0;
   const anim=setInterval(()=>{
     t+=0.06;
     if(t>=1){
       clearInterval(anim);
       penaltiCiz(hedefX, 85, kaleciHedef, hedefX);
-      // Sonuç: direk çarpması varsa gol olmaz, kaleci tutuşu da olmaz (sadece kaçırma)
-      let gol = !direkCarpti && Math.abs(hedefX-kaleciHedef)>16;
+      let gol = !direkCarpti && Math.abs(hedefX-kaleciHedef)>16 && hedefX>12 && hedefX<88;
       setTimeout(()=>{
         if(gol){
           if(st.sira==='p1') st.p1Gol++; else st.p2Gol++;
           notify('⚽ GOOOL!','success');
         } else if(direkCarpti){
-          notify('🪵 Direğe çarptı! Gol değil.','error');
-          Sound.play('tick');
+          notify('🪵 Direğe çarptı!','error'); Sound.play('tick');
         } else {
           notify('🧤 Kaleci kurtardı!','error');
         }
         if(st.sira==='p1') st.p1Atis++; else st.p2Atis++;
         st.animasyon=false;
         st.sira = st.sira==='p1' ? 'p2' : 'p1';
-        if(st.p1Atis>=st.toplam && st.p2Atis>=st.toplam) st.bitti=true;
+        if(st.mod==='cpu') st.sira='p1'; // cpu modunda hep p1 atar
+        const bitti = st.mod==='cpu' ? st.p1Atis>=st.toplam : (st.p1Atis>=st.toplam && st.p2Atis>=st.toplam);
+        if(bitti) st.bitti=true;
         penaltiGoster();
       }, 700);
       return;
     }
     const curX = 50 + (hedefX-50)*t;
     const curKaleci = 50 + (kaleciHedef-50)*Math.min(1,t*1.4);
-    penaltiCiz(curX, t*85, curKaleci, curX);
+    penaltiCiz(curX, t*85*guc/1.2, curKaleci, curX);
   }, 35);
 }
 
@@ -7329,33 +7321,61 @@ function y3ArabaYap(renk){
   });
   return g;
 }
-// Motor sesi (WebAudio — hıza göre devir)
+// Motor sesi (WebAudio — gerçekçi V8 uğultusu)
 let _y3Ses=null;
 function y3SesBaslat(){
   if(_y3Ses) return;
   try{
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
-    o.type='sawtooth'; o.frequency.value=60;
-    o2.type='triangle'; o2.frequency.value=120;
-    g.gain.value=0.04;
-    o.connect(g); o2.connect(g); g.connect(ctx.destination);
-    o.start(); o2.start();
-    _y3Ses={ctx,o,o2,g};
+    // 3 osilatör: derin uğultu + orta + egzoz patlaması
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator(), o3=ctx.createOscillator();
+    const g=ctx.createGain(), lp=ctx.createBiquadFilter();
+    o1.type='sawtooth'; o1.frequency.value=55;
+    o2.type='square'; o2.frequency.value=82;
+    o3.type='triangle'; o3.frequency.value=110;
+    lp.type='lowpass'; lp.frequency.value=900;
+    g.gain.value=0.05;
+    o1.connect(lp); o2.connect(lp); o3.connect(lp); lp.connect(g); g.connect(ctx.destination);
+    o1.start(); o2.start(); o3.start();
+    _y3Ses={ctx,o1,o2,o3,g,lp};
   }catch(e){}
 }
 function y3SesGuncelle(hiz,gaz){
   if(!_y3Ses) return;
-  _y3Ses.o.frequency.value=50+hiz*65+(gaz?18:0);
-  _y3Ses.o2.frequency.value=100+hiz*130;
-  _y3Ses.g.gain.value=0.03+hiz*0.018;
+  const d=hiz; // devir
+  _y3Ses.o1.frequency.value=48+d*55+(gaz?14:0);
+  _y3Ses.o2.frequency.value=78+d*95;
+  _y3Ses.o3.frequency.value=105+d*150;
+  _y3Ses.lp.frequency.value=700+d*900;
+  _y3Ses.g.gain.value=0.04+d*0.02;
 }
-function y3SesDur(){ if(_y3Ses){ try{_y3Ses.o.stop();_y3Ses.o2.stop();_y3Ses.ctx.close();}catch(e){} _y3Ses=null; } }
+function y3Korna(){
+  if(!_y3Ses){ y3SesBaslat(); }
+  try{
+    const ctx=_y3Ses.ctx;
+    const ko=ctx.createOscillator(), kg=ctx.createGain();
+    ko.type='square'; ko.frequency.value=370;
+    const ko2=ctx.createOscillator(); ko2.type='square'; ko2.frequency.value=440;
+    kg.gain.value=0.12;
+    ko.connect(kg); ko2.connect(kg); kg.connect(ctx.destination);
+    ko.start(); ko2.start();
+    setTimeout(()=>{ try{ko.stop();ko2.stop();}catch(e){} }, 450);
+  }catch(e){}
+}
+function y3SesDur(){ if(_y3Ses){ try{_y3Ses.o1.stop();_y3Ses.o2.stop();_y3Ses.o3.stop();_y3Ses.ctx.close();}catch(e){} _y3Ses=null; } }
+
 let _y3=null;
+const Y3_RENKLER = [
+  {ad:'Kırmızı',hex:0xE53935}, {ad:'Mavi',hex:0x1E88E5}, {ad:'Sarı',hex:0xFDD835},
+  {ad:'Yeşil',hex:0x43A047}, {ad:'Beyaz',hex:0xF5F5F5}, {ad:'Siyah',hex:0x212121},
+  {ad:'Turuncu',hex:0xFB8C00}, {ad:'Mor',hex:0x8E24AA},
+];
 const Y3_PISTLER = {
-  otoyol: { ad:'🛣️ Otoyol', ac:'Trafikte solla! Gaz-fren dengesi önemli.', gok:0x87CEEB, zemin:0x4CAF50, yol:0x37474F, sis:[50,150], cizgi:0xFFEB3B, agac:0x2E7D32, max:2.3, trafikHiz:0.5 },
-  ralli: { ad:'🏜️ Ralli (Toprak)', ac:'Toprak pistte kay! Direksiyon hakimiyeti zor.', gok:0xFFB74D, zemin:0x8D6E63, yol:0xA1887F, sis:[40,120], cizgi:0xFFFFFF, agac:0x6D4C41, max:2.0, trafikHiz:0.35, kayma:true },
-  gece: { ad:'🌙 Gece Yarışı', ac:'Karanlıkta farlarınla sür!', gok:0x0D1B2A, zemin:0x14281C, yol:0x21282E, sis:[25,90], cizgi:0xFFF176, agac:0x16301B, max:2.5, trafikHiz:0.55, gece:true },
+  otoyol: { ad:'🛣️ Otoyol', ac:'Geniş düz otoyol, hızlan!', gok:0x87CEEB, zemin:0x4CAF50, yol:0x37474F, sis:[60,170], cizgi:0xFFEB3B, agac:0x2E7D32, max:2.3, trafikHiz:0.5, viraj:0.0 },
+  dag: { ad:'⛰️ Dağ Yolu', ac:'Virajlı dağ yolu, dikkatli sür!', gok:0x90CAF9, zemin:0x66BB6A, yol:0x455A64, sis:[50,150], cizgi:0xFFFFFF, agac:0x1B5E20, max:2.0, trafikHiz:0.45, viraj:1.0 },
+  ralli: { ad:'🏜️ Ralli (Toprak)', ac:'Virajlı toprak pist, kay!', gok:0xFFB74D, zemin:0x8D6E63, yol:0xA1887F, sis:[45,130], cizgi:0xFFFFFF, agac:0x6D4C41, max:2.1, trafikHiz:0.4, kayma:true, viraj:1.3 },
+  sehir: { ad:'🏙️ Şehir', ac:'Binalar arası şehir trafiği!', gok:0xB0BEC5, zemin:0x607D8B, yol:0x424242, sis:[45,130], cizgi:0xFFEB3B, agac:0x90A4AE, max:2.1, trafikHiz:0.55, viraj:0.6, bina:true },
+  gece: { ad:'🌙 Gece Yarışı', ac:'Virajlı gece pisti, farını kullan!', gok:0x0D1B2A, zemin:0x14281C, yol:0x21282E, sis:[30,95], cizgi:0xFFF176, agac:0x16301B, max:2.5, trafikHiz:0.55, gece:true, viraj:0.9 },
 };
 function yaris3dBasla(){
   const el=document.getElementById('oyunlarList');
@@ -7363,13 +7383,22 @@ function yaris3dBasla(){
     <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
       <div class="card-title" style="justify-content:center">🏁 3D Araba Yarışı</div>
-      <div style="font-size:0.9rem;color:var(--tm);margin:12px 0">Pistini seç!</div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">1) Araba rengini seç:</div>
+      <div id="y3RenkSec" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px">
+        ${Y3_RENKLER.map((r,i)=>`<div onclick="y3RenkSec(${i})" data-i="${i}" class="y3renk" style="width:42px;height:42px;border-radius:50%;background:#${r.hex.toString(16).padStart(6,'0')};cursor:pointer;border:4px solid ${i===0?'var(--p)':'transparent'};box-shadow:0 2px 6px rgba(0,0,0,0.2)" title="${r.ad}"></div>`).join('')}
+      </div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">2) Pistini seç:</div>
       ${Object.keys(Y3_PISTLER).map(k=>`
-        <button onclick="yaris3dOyna('${k}')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:15px;border-radius:14px;font-weight:700;font-size:1rem;margin-bottom:10px;cursor:pointer;text-align:left">
+        <button onclick="yaris3dOyna('${k}')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:14px;border-radius:14px;font-weight:700;font-size:0.98rem;margin-bottom:9px;cursor:pointer;text-align:left">
           <div>${Y3_PISTLER[k].ad}</div>
-          <div style="font-size:0.78rem;font-weight:400;opacity:0.85;margin-top:3px">${Y3_PISTLER[k].ac}</div>
+          <div style="font-size:0.76rem;font-weight:400;opacity:0.85;margin-top:2px">${Y3_PISTLER[k].ac}</div>
         </button>`).join('')}
     </div>`;
+}
+let _y3RenkSecili=0;
+function y3RenkSec(i){
+  _y3RenkSecili=i;
+  document.querySelectorAll('.y3renk').forEach(el=>{ el.style.border='4px solid '+(parseInt(el.dataset.i)===i?'var(--p)':'transparent'); });
 }
 function yaris3dOyna(pk){
   const el=document.getElementById('oyunlarList');
@@ -7379,14 +7408,14 @@ function yaris3dOyna(pk){
       <div class="card-title" style="justify-content:center">${Y3_PISTLER[pk].ad}</div>
       ${tamEkranBtn()}
       <div style="display:flex;justify-content:space-around;font-weight:700;color:var(--p);margin-bottom:8px">
-        <span>🏁 <span id="y3Skor">0</span></span><span>🚀 <span id="y3Hiz">60 km/s</span></span><span><span id="y3Can">❤️❤️❤️</span></span>
+        <span>🏁 <span id="y3Skor">0</span></span><span>🚀 <span id="y3Hiz">60 km/s</span></span>
       </div>
       <div id="y3Kap" style="width:100%;max-width:340px;margin:0 auto;border-radius:12px;overflow:hidden;touch-action:none;border:3px solid #263238;background:#555;min-height:200px">
         <div style="padding:40px;color:#ddd">⏳ 3D motor yükleniyor...</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;max-width:340px;margin-left:auto;margin-right:auto">
-        <button id="y3FrenBtn" style="flex:1;background:#C62828;color:#fff;border:none;padding:18px 8px;border-radius:14px;font-weight:800;font-size:1rem;cursor:pointer;user-select:none;touch-action:none">🛑<br>FREN</button>
-        <div id="y3Dir" style="width:108px;height:108px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;max-width:340px;margin-left:auto;margin-right:auto">
+        <button id="y3FrenBtn" style="flex:1;background:#C62828;color:#fff;border:none;padding:16px 6px;border-radius:14px;font-weight:800;font-size:0.92rem;cursor:pointer;user-select:none;touch-action:none">🛑<br>FREN</button>
+        <div id="y3Dir" style="width:100px;height:100px;flex-shrink:0;touch-action:none;cursor:grab;user-select:none">
           <svg id="y3DirSVG" viewBox="0 0 100 100" style="width:100%;height:100%;transition:transform 0.08s">
             <circle cx="50" cy="50" r="46" fill="none" stroke="#263238" stroke-width="9"/>
             <circle cx="50" cy="50" r="12" fill="#263238"/>
@@ -7396,9 +7425,12 @@ function yaris3dOyna(pk){
             <circle cx="50" cy="50" r="5" fill="#FDD835"/>
           </svg>
         </div>
-        <button id="y3GazBtn" style="flex:1;background:#2E7D32;color:#fff;border:none;padding:18px 8px;border-radius:14px;font-weight:800;font-size:1rem;cursor:pointer;user-select:none;touch-action:none">⛽<br>GAZ</button>
+        <button id="y3GazBtn" style="flex:1;background:#2E7D32;color:#fff;border:none;padding:16px 6px;border-radius:14px;font-weight:800;font-size:0.92rem;cursor:pointer;user-select:none;touch-action:none">⛽<br>GAZ</button>
       </div>
-      <div style="font-size:0.76rem;color:var(--tm);margin-top:10px">🛞 Direksiyonu parmağınla sağa-sola çevir · ⛽ GAZ basılı tut: hızlan · 🛑 FREN: yavaşla. Trafiği solla, çarpma!</div>
+      <div style="text-align:center;margin-top:8px">
+        <button id="y3KornaBtn" onclick="y3Korna()" style="background:#FFA000;color:#fff;border:none;padding:10px 30px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;user-select:none">📣 KORNA</button>
+      </div>
+      <div style="font-size:0.74rem;color:var(--tm);margin-top:10px">🛞 Direksiyonu çevir · ⛽ GAZ · 🛑 FREN · 📣 KORNA. Çarpınca yavaşlarsın ama devam! Virajları takip et.</div>
     </div>`;
   threeYukle().then(()=>y3Kur(pk)).catch(()=>{
     const k=document.getElementById('y3Kap');
@@ -7416,52 +7448,67 @@ function y3Kur(pk){
   const sah=new THREE.Scene();
   sah.background=new THREE.Color(cfg.gok);
   sah.fog=new THREE.Fog(cfg.gok,cfg.sis[0],cfg.sis[1]);
-  const kam=new THREE.PerspectiveCamera(72,w/h,0.1,250);
+  const kam=new THREE.PerspectiveCamera(72,w/h,0.1,300);
   kam.position.set(0,5.2,9); kam.lookAt(0,0.5,-24);
   sah.add(new THREE.HemisphereLight(0xffffff,cfg.zemin,cfg.gece?0.35:0.95));
   const gun=new THREE.DirectionalLight(0xffffff,cfg.gece?0.15:0.7); gun.position.set(10,25,10); sah.add(gun);
-  const zemin=new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshLambertMaterial({color:cfg.zemin}));
+  // Zemin
+  const zemin=new THREE.Mesh(new THREE.PlaneGeometry(500,500), new THREE.MeshLambertMaterial({color:cfg.zemin}));
   zemin.rotation.x=-Math.PI/2; zemin.position.y=-0.02; sah.add(zemin);
-  const yol=new THREE.Mesh(new THREE.PlaneGeometry(13,400), new THREE.MeshLambertMaterial({color:cfg.yol}));
-  yol.rotation.x=-Math.PI/2; yol.position.set(0,0,-100); sah.add(yol);
-  [[-6.6],[6.6]].forEach(p=>{ const ke=new THREE.Mesh(new THREE.PlaneGeometry(0.4,400), new THREE.MeshLambertMaterial({color:0xffffff})); ke.rotation.x=-Math.PI/2; ke.position.set(p[0],0.01,-100); sah.add(ke); });
-  const cizgiler=[], agaclar=[], kerbler=[];
-  for(let i=0;i<22;i++){
-    const cz=new THREE.Mesh(new THREE.PlaneGeometry(0.35,2.4), new THREE.MeshLambertMaterial({color:cfg.cizgi}));
-    cz.rotation.x=-Math.PI/2; cz.position.set(0,0.02,-i*8); sah.add(cz); cizgiler.push(cz);
+  // YOL: birçok segmentten oluşur (viraj için her segment yana kayar)
+  const segSay=40, segBoy=8;
+  const yolSegler=[];
+  for(let i=0;i<segSay;i++){
+    const seg=new THREE.Group();
+    const yzm=new THREE.Mesh(new THREE.PlaneGeometry(13,segBoy+0.2), new THREE.MeshLambertMaterial({color:cfg.yol}));
+    yzm.rotation.x=-Math.PI/2; seg.add(yzm);
+    // Kenar çizgileri
+    [[-6.6],[6.6]].forEach(p=>{ const ke=new THREE.Mesh(new THREE.PlaneGeometry(0.4,segBoy+0.2), new THREE.MeshLambertMaterial({color:0xffffff})); ke.rotation.x=-Math.PI/2; ke.position.set(p[0],0.01,0); seg.add(ke); });
+    // Orta çizgi
+    const cz=new THREE.Mesh(new THREE.PlaneGeometry(0.35,3), new THREE.MeshLambertMaterial({color:cfg.cizgi}));
+    cz.rotation.x=-Math.PI/2; cz.position.y=0.02; seg.add(cz);
+    // Kerbler
+    [[-6.9],[6.9]].forEach((p,ki)=>{ const kb=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,segBoy/2), new THREE.MeshLambertMaterial({color:i%2?0xE53935:0xffffff})); kb.position.set(p[0],0.15,0); seg.add(kb); });
+    seg.position.z=-i*segBoy;
+    sah.add(seg); yolSegler.push(seg);
   }
-  for(let i=0;i<10;i++){
+  // Ağaçlar / binalar
+  const agaclar=[];
+  for(let i=0;i<12;i++){
     for(const yon of [-1,1]){
-      const ag=new THREE.Group();
-      const gv=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,2.2,6), new THREE.MeshLambertMaterial({color:0x5D4037}));
-      gv.position.y=1.1; ag.add(gv);
-      const yp=new THREE.Mesh(new THREE.ConeGeometry(1.6,3.4,8), new THREE.MeshLambertMaterial({color:cfg.agac}));
-      yp.position.y=3.4; ag.add(yp);
-      ag.position.set(yon*(9+Math.random()*5), 0, -i*18-Math.random()*8);
-      sah.add(ag); agaclar.push(ag);
+      let nesne;
+      if(cfg.bina){
+        const yuk=6+Math.random()*12;
+        nesne=new THREE.Mesh(new THREE.BoxGeometry(4+Math.random()*2,yuk,4), new THREE.MeshLambertMaterial({color:[0x78909C,0x90A4AE,0x607D8B,0xB0BEC5][Math.floor(Math.random()*4)]}));
+        nesne.position.y=yuk/2;
+        const grp=new THREE.Group(); grp.add(nesne); nesne=grp;
+      } else {
+        nesne=new THREE.Group();
+        const gv=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,2.2,6), new THREE.MeshLambertMaterial({color:0x5D4037}));
+        gv.position.y=1.1; nesne.add(gv);
+        const yp=new THREE.Mesh(new THREE.ConeGeometry(1.6,3.4,8), new THREE.MeshLambertMaterial({color:cfg.agac}));
+        yp.position.y=3.4; nesne.add(yp);
+      }
+      nesne.position.set(yon*(10+Math.random()*4), 0, -i*16-Math.random()*8);
+      nesne.userData={yon, baseX:yon*(10+Math.random()*4)};
+      sah.add(nesne); agaclar.push(nesne);
     }
   }
-  for(let i=0;i<40;i++){
-    for(const yon of [-1,1]){
-      const kb=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,2.2), new THREE.MeshLambertMaterial({color:i%2?0xE53935:0xffffff}));
-      kb.position.set(yon*6.9,0.15,-i*4.5); sah.add(kb); kerbler.push(kb);
-    }
-  }
+  // Bulutlar
   const bulutlar=[];
   for(let i=0;i<6;i++){
     const b=new THREE.Mesh(new THREE.SphereGeometry(3+Math.random()*2.5,8,8), new THREE.MeshLambertMaterial({color:cfg.gece?0x2a3b4d:0xffffff}));
     b.position.set(-35+Math.random()*70, 17+Math.random()*7, -60-Math.random()*60);
     b.scale.y=0.45; sah.add(b); bulutlar.push(b);
   }
-  const oyuncu=y3ArabaYap(0x43A047); sah.add(oyuncu);
-  if(cfg.gece){
-    const far=new THREE.PointLight(0xFFF59D,1.6,38);
-    far.position.set(0,1.6,2.5); oyuncu.add(far);
-  }
-  const renkler=[0xE53935,0x1E88E5,0xFB8C00,0x8E24AA,0x00ACC1];
-  _y3={ren,sah,kam,oyuncu,engeller:[],cizgiler,agaclar,kerbler,bulutlar,renkler,cfg,
+  // Oyuncu arabası (seçilen renk)
+  const oyuncu=y3ArabaYap(Y3_RENKLER[_y3RenkSecili].hex); sah.add(oyuncu);
+  if(cfg.gece){ const far=new THREE.PointLight(0xFFF59D,1.6,40); far.position.set(0,1.6,2.5); oyuncu.add(far); }
+  const renkler=[0xE53935,0x1E88E5,0xFB8C00,0x8E24AA,0x00ACC1,0xF5F5F5];
+  _y3={ren,sah,kam,oyuncu,engeller:[],yolSegler,segBoy,segSay,agaclar,bulutlar,renkler,cfg,
     x:0,hedef:0,direksiyon:0,gaz:false,fren:false,
-    hiz:0.7,skor:0,can:3,sersem:0,tik:0,raf:null,bitti:false};
+    hiz:0.7,skor:0,can:3,sersem:0,tik:0,raf:null,bitti:false,
+    virajFaz:0, yolKayma:0, mesafe:0};
   y3PedalBagla();
   y3Dongu();
 }
@@ -7493,55 +7540,69 @@ function y3Dongu(){
   const s=_y3; if(!s||s.bitti) return;
   s.tik++;
   const cfg=s.cfg;
-  // Gaz / fren / sürtünme
   if(s.gaz) s.hiz=Math.min(cfg.max, s.hiz+0.014);
   else if(s.fren) s.hiz=Math.max(0.15, s.hiz-0.04);
   else s.hiz=Math.max(0.35, s.hiz-0.004);
   y3SesGuncelle(s.hiz,s.gaz);
-  // Direksiyon (ralli: kaygan)
+  // Viraj: zamanla değişen yol eğriliği
+  s.virajFaz += s.hiz*0.012;
+  const viraj = Math.sin(s.virajFaz)*cfg.viraj; // -viraj..+viraj
+  // Direksiyon
   const tepki = cfg.kayma?0.09:0.15;
   s.hedef=Math.max(-4.5,Math.min(4.5, s.hedef + s.direksiyon*0.22*(0.6+s.hiz*0.4)));
   s.x+=(s.hedef-s.x)*tepki;
-  if(cfg.kayma) s.x += Math.sin(s.tik*0.25)*0.012*s.hiz; // toprakta hafif kayma
+  if(cfg.kayma) s.x += Math.sin(s.tik*0.25)*0.012*s.hiz;
+  // Virajda araba dışa savrulur (otomatik), oyuncu karşı direksiyon vermeli
+  s.x += viraj*0.25*s.hiz;
+  s.x=Math.max(-6,Math.min(6,s.x));
   s.oyuncu.position.x=s.x;
-  s.oyuncu.rotation.y=-(s.hedef-s.x)*0.12 - s.direksiyon*0.06;
+  s.oyuncu.rotation.y=-(s.hedef-s.x)*0.12 - s.direksiyon*0.06 - viraj*0.08;
   s.oyuncu.rotation.z=(s.hedef-s.x)*0.06;
   if(s.sersem>0){ s.sersem--; s.oyuncu.visible=Math.floor(s.tik/4)%2===0; } else s.oyuncu.visible=true;
-  // Dünya akışı (hızla orantılı)
   const v=s.hiz;
-  s.cizgiler.forEach(c=>{ c.position.z+=v; if(c.position.z>10) c.position.z-=176; });
-  s.kerbler.forEach(k=>{ k.position.z+=v; if(k.position.z>10) k.position.z-=180; });
-  s.agaclar.forEach(a=>{ a.position.z+=v; if(a.position.z>12) a.position.z-=185; });
-  // Trafik üret
+  // Yol segmentleri akar + virajla yana kayar
+  s.yolSegler.forEach(seg=>{
+    seg.position.z+=v;
+    const d = -seg.position.z/ (s.segBoy*s.segSay);
+    seg.position.x = Math.sin(s.virajFaz + seg.position.z*0.015)*cfg.viraj*6;
+    if(seg.position.z>10){ seg.position.z-=s.segBoy*s.segSay; }
+  });
+  s.agaclar.forEach(a=>{
+    a.position.z+=v;
+    a.position.x = a.userData.baseX + Math.sin(s.virajFaz + a.position.z*0.015)*cfg.viraj*6;
+    if(a.position.z>12){ a.position.z-=16*12; }
+  });
+  s.bulutlar.forEach(b=>{ b.position.x+=0.025; if(b.position.x>45) b.position.x=-45; });
+  // Trafik
   if(s.tik % Math.max(38, 85-Math.floor(s.skor/2)*4) === 0){
     const ar=y3ArabaYap(s.renkler[Math.floor(Math.random()*s.renkler.length)]);
-    ar.position.set([-4,0,4][Math.floor(Math.random()*3)],0,-135);
+    const seritX=[-4,0,4][Math.floor(Math.random()*3)];
+    ar.position.set(seritX,0,-150);
     ar.rotation.y=Math.PI;
+    ar.userData={seritX};
     s.sah.add(ar); s.engeller.push(ar);
   }
-  // Trafik: kendi hızları var → sen yavaşsan uzaklaşırlar, hızlıysan yetişirsin!
   for(let i=s.engeller.length-1;i>=0;i--){
     const e=s.engeller[i];
     e.position.z += (v - cfg.trafikHiz);
+    // Viraj ile trafik de kayar
+    e.position.x = e.userData.seritX + Math.sin(s.virajFaz + e.position.z*0.015)*cfg.viraj*6;
     if(s.sersem<=0 && Math.abs(e.position.x-s.x)<2 && Math.abs(e.position.z)<3.2){
-      s.can--; s.sersem=70; s.hiz=Math.max(0.35,s.hiz*0.5); Sound.play('tick');
-      notify('💥 Çarpıştın! Can: '+s.can,'error');
-      if(s.can<=0){ y3Bitir(); return; }
+      s.sersem=40; s.hiz=Math.max(0.3,s.hiz*0.45); Sound.play('tick');
+      notify('💥 Çarpıştın! Yavaşladın.','error');
+      // Can gitmez, oyun bitmez — sadece yavaşlama
     }
     if(e.position.z>8){ s.sah.remove(e); s.engeller.splice(i,1); s.skor++; }
-    else if(e.position.z<-160){ s.sah.remove(e); s.engeller.splice(i,1); }
+    else if(e.position.z<-170){ s.sah.remove(e); s.engeller.splice(i,1); }
   }
-  const sk=document.getElementById('y3Skor'); if(sk) sk.textContent=s.skor;
-  const cn=document.getElementById('y3Can'); if(cn) cn.textContent='❤️'.repeat(Math.max(0,s.can));
-  const hz=document.getElementById('y3Hiz'); if(hz) hz.textContent=Math.round(s.hiz*95)+' km/s';
-  // Dinamik kamera: hızla FOV artar, frenle öne eğilir, çarpınca sarsılır
+  // Dinamik kamera
   s.kam.fov=70+s.hiz*7; s.kam.updateProjectionMatrix();
   const sars=(s.sersem>0?(Math.random()-0.5)*0.6:0)+(s.hiz>1.9?(Math.random()-0.5)*0.07:0);
   s.kam.position.set(s.x*0.35+sars, 5.2+(s.gaz?0.12:0)-(s.fren?0.28:0), 9);
-  s.kam.lookAt(s.x*0.6, 0.5, -24);
-  s.kam.rotation.z += -s.direksiyon*0.03;
-  // Bulutlar yavaşça akar
-  s.bulutlar.forEach(b=>{ b.position.x+=0.025; if(b.position.x>45) b.position.x=-45; });
+  s.kam.lookAt(s.x*0.6+viraj*3, 0.5, -24);
+  s.kam.rotation.z += -s.direksiyon*0.03 - viraj*0.02;
+  const sk=document.getElementById('y3Skor'); if(sk) sk.textContent=s.skor;
+  const hz=document.getElementById('y3Hiz'); if(hz) hz.textContent=Math.round(s.hiz*95)+' km/s';
   s.ren.render(s.sah,s.kam);
   s.raf=requestAnimationFrame(y3Dongu);
 }
@@ -7556,172 +7617,12 @@ function y3Bitir(){
     <div class="card" style="text-align:center">
       <div style="font-size:3rem">${s.skor>=10?'🏆':'💥'}</div>
       <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">Yarış bitti! Solladığın araba: ${s.skor}</div>
-      <button onclick="yaris3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Pist Seç & Tekrar Yarış</button>
+      <button onclick="yaris3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Renk/Pist Seç & Tekrar</button>
     </div>`;
   try{ s.ren.dispose(); }catch(e){}
   _y3=null;
 }
 function y3Cik(){ y3SesDur(); if(_y3){ _y3.bitti=true; if(_y3.raf)cancelAnimationFrame(_y3.raf); try{_y3.ren.dispose();}catch(e){} _y3=null; } tamEkranKapat(); oyunGeriDon(); }
-
-// ---------- 🎯 3D PENALTI ----------
-let _p3=null;
-function penalti3dBasla(){
-  const el=document.getElementById('oyunlarList');
-  el.innerHTML=`
-    <div onclick="p3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
-    <div class="card" style="text-align:center">
-      <div class="card-title" style="justify-content:center">🎯 3D Penaltı</div>
-      ${tamEkranBtn()}
-      <div style="font-weight:700;color:var(--p);margin-bottom:6px"><span id="p3Durum">Atış 1/5 • Gol: 0</span></div>
-      <div id="p3Kap" style="width:100%;max-width:340px;margin:0 auto;border-radius:12px;overflow:hidden;touch-action:none;border:3px solid #1B5E20;background:#87CEEB;min-height:200px">
-        <div style="padding:40px;color:#555">⏳ 3D motor yükleniyor...</div>
-      </div>
-      <div style="font-size:0.78rem;color:var(--tm);margin-top:10px">👆 Topu parmağınla <b>yukarı + yana kaydırıp bırak</b>. Ne kadar hızlı kaydırırsan o kadar sert vurursun!</div>
-    </div>`;
-  threeYukle().then(p3Kur).catch(()=>{
-    const k=document.getElementById('p3Kap');
-    if(k) k.innerHTML='<div style="padding:30px;color:#E53935">❌ 3D motor yüklenemedi. İnternet bağlantını kontrol et.</div>';
-  });
-}
-function p3Kur(){
-  const kap=document.getElementById('p3Kap'); if(!kap) return;
-  kap.innerHTML='';
-  const w=kap.clientWidth||320, h=Math.round(w*1.1);
-  const ren=new THREE.WebGLRenderer({antialias:true});
-  ren.setSize(w,h); ren.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
-  kap.appendChild(ren.domElement);
-  const sah=new THREE.Scene();
-  sah.background=new THREE.Color(0x87CEEB);
-  sah.fog=new THREE.Fog(0x87CEEB,30,90);
-  const kam=new THREE.PerspectiveCamera(64,w/h,0.1,150);
-  kam.position.set(0,2.6,7); kam.lookAt(0,1.4,-17);
-  sah.add(new THREE.HemisphereLight(0xffffff,0x55aa55,1.0));
-  const gun=new THREE.DirectionalLight(0xffffff,0.6); gun.position.set(6,18,8); sah.add(gun);
-  // Saha
-  const cim=new THREE.Mesh(new THREE.PlaneGeometry(80,120), new THREE.MeshLambertMaterial({color:0x43A047}));
-  cim.rotation.x=-Math.PI/2; sah.add(cim);
-  for(let i=0;i<6;i++){
-    const st=new THREE.Mesh(new THREE.PlaneGeometry(80,4), new THREE.MeshLambertMaterial({color:0x4CAF50}));
-    st.rotation.x=-Math.PI/2; st.position.set(0,0.01,-i*8); sah.add(st);
-  }
-  // Tribün + seyirciler + reklam panosu (stadyum havası)
-  const trib=new THREE.Mesh(new THREE.BoxGeometry(60,10,4), new THREE.MeshLambertMaterial({color:0x37474F}));
-  trib.position.set(0,5,-26); sah.add(trib);
-  for(let i=0;i<72;i++){
-    const sy=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.3), new THREE.MeshLambertMaterial({color:[0xE53935,0x1E88E5,0xFDD835,0xffffff,0x43A047][i%5]}));
-    sy.position.set(-27+(i%24)*2.35, 2.2+Math.floor(i/24)*2.3, -23.9); sah.add(sy);
-  }
-  const pano=new THREE.Mesh(new THREE.BoxGeometry(30,1.1,0.3), new THREE.MeshLambertMaterial({color:0x1565C0}));
-  pano.position.set(0,0.55,-19.6); sah.add(pano);
-  const yanFM=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.18,side:THREE.DoubleSide});
-  [[-3.7],[3.7]].forEach(p=>{ const yf=new THREE.Mesh(new THREE.PlaneGeometry(1.2,2.5), yanFM); yf.rotation.y=Math.PI/2; yf.position.set(p[0],1.28,-17.55); sah.add(yf); });
-  // Kale (z=-17): direkler, üst direk, file
-  const beyaz=new THREE.MeshLambertMaterial({color:0xffffff});
-  const dG=new THREE.CylinderGeometry(0.12,0.12,2.6,8);
-  [[-3.7],[3.7]].forEach(p=>{ const d=new THREE.Mesh(dG,beyaz); d.position.set(p[0],1.3,-17); sah.add(d); });
-  const ust=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,7.6,8),beyaz);
-  ust.rotation.z=Math.PI/2; ust.position.set(0,2.55,-17); sah.add(ust);
-  const file=new THREE.Mesh(new THREE.PlaneGeometry(7.4,2.5), new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.22,side:THREE.DoubleSide}));
-  file.position.set(0,1.28,-17.6); sah.add(file);
-  // Penaltı noktası
-  const nokta=new THREE.Mesh(new THREE.CircleGeometry(0.14,12), beyaz);
-  nokta.rotation.x=-Math.PI/2; nokta.position.set(0,0.012,-0.5); sah.add(nokta);
-  // Kaleci
-  const kaleci=new THREE.Group();
-  const kg=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,0.45), new THREE.MeshLambertMaterial({color:0xFFEB3B}));
-  kg.position.y=1.15; kaleci.add(kg);
-  const kk=new THREE.Mesh(new THREE.SphereGeometry(0.3,10,10), new THREE.MeshLambertMaterial({color:0xFFCC80}));
-  kk.position.y=2.15; kaleci.add(kk);
-  [[-0.75],[0.75]].forEach(p=>{ const kol=new THREE.Mesh(new THREE.BoxGeometry(0.3,1.0,0.3), new THREE.MeshLambertMaterial({color:0xFFEB3B})); kol.position.set(p[0],1.45,0); kol.rotation.z=p[0]>0?-0.5:0.5; kaleci.add(kol); });
-  kaleci.position.set(0,0,-16.4); sah.add(kaleci);
-  // Top
-  const top=new THREE.Mesh(new THREE.SphereGeometry(0.36,14,14), new THREE.MeshLambertMaterial({color:0xffffff}));
-  top.position.set(0,0.36,-0.5); sah.add(top);
-  const golge=new THREE.Mesh(new THREE.CircleGeometry(0.34,12), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.25}));
-  golge.rotation.x=-Math.PI/2; golge.position.set(0,0.013,-0.5); sah.add(golge);
-  _p3={ren,sah,kam,top,golge,kaleci,gol:0,atis:0,toplam:5,anim:false,bitti:false,raf:null,basla:null};
-  // Kaydırma kontrolü
-  kap.onpointerdown=(e)=>{ if(!_p3||_p3.anim||_p3.bitti)return; _p3.basla={x:e.clientX,y:e.clientY,t:Date.now()}; };
-  kap.onpointerup=(e)=>{ p3Birak(e.clientX,e.clientY,kap); };
-  kap.ontouchstart=(e)=>{ if(!_p3||_p3.anim||_p3.bitti)return; const t=e.touches[0]; _p3.basla={x:t.clientX,y:t.clientY,t:Date.now()}; if(e.cancelable)e.preventDefault(); };
-  kap.ontouchend=(e)=>{ const t=e.changedTouches[0]; p3Birak(t.clientX,t.clientY,kap); if(e.cancelable)e.preventDefault(); };
-  p3Render();
-}
-function p3Render(){ const s=_p3; if(!s||s.bitti)return; s.ren.render(s.sah,s.kam); s.raf=requestAnimationFrame(p3Render); }
-function p3Birak(cx,cy,kap){
-  const s=_p3; if(!s||s.anim||s.bitti||!s.basla)return;
-  const dx=cx-s.basla.x, dy=cy-s.basla.y;
-  s.basla=null;
-  if(dy>-22) return;
-  const r=kap.getBoundingClientRect();
-  const hedefX=Math.max(-3.4,Math.min(3.4,(dx/r.width)*12));
-  const guc=Math.max(0.45,Math.min(1.35,(-dy)/(r.height*0.55)));
-  p3Sut(hedefX,guc);
-}
-function p3Sut(hedefX,guc){
-  const s=_p3; s.anim=true;
-  const kHedef=[-2.3,0,2.3][Math.floor(Math.random()*3)];
-  const tepe=1.0+guc*1.7;
-  let t=0;
-  const adim=()=>{
-    if(!_p3) return;
-    t+=0.034+guc*0.012;
-    if(t>=1){ p3Sonuc(hedefX,tepe,kHedef); return; }
-    s.top.position.z=-0.5+t*(-16.5);
-    s.top.position.x=hedefX*t;
-    s.top.position.y=0.36+Math.sin(t*Math.PI)*tepe;
-    s.top.rotation.x-=0.35;
-    s.golge.position.x=s.top.position.x; s.golge.position.z=s.top.position.z;
-    s.kaleci.position.x=kHedef*Math.min(1,t*1.5);
-    s.kaleci.rotation.z=(kHedef!==0?(kHedef>0?-1:1)*Math.min(0.9,t*1.6):0);
-    requestAnimationFrame(adim);
-  };
-  adim();
-}
-function p3Sonuc(hedefX,tepe,kHedef){
-  const s=_p3;
-  const sonY=0.36+Math.sin(Math.PI*0.985)*tepe;
-  const yuksek = (0.36+tepe) > 2.45 && sonY>2.2;
-  const direk = Math.abs(Math.abs(hedefX)-3.6)<0.28;
-  const kurtardi = Math.abs(hedefX-kHedef)<1.15 && sonY<2.15;
-  let gol=false, msg='';
-  if(direk){ msg='🪵 Direğe çarptı!'; Sound.play('tick'); }
-  else if(Math.abs(hedefX)>3.55){ msg='😅 Dışarı gitti! (Auta)'; }
-  else if(yuksek){ msg='⬆️ Üstten auta!'; }
-  else if(kurtardi){ msg='🧤 Kaleci kurtardı!'; }
-  else { gol=true; msg='⚽ GOOOL!'; }
-  notify(msg, gol?'success':'error');
-  if(gol) s.gol++;
-  s.atis++;
-  const d=document.getElementById('p3Durum');
-  setTimeout(()=>{
-    if(s.atis>=s.toplam){ p3Bitir(); return; }
-    // Sıfırla
-    s.top.position.set(0,0.36,-0.5); s.golge.position.set(0,0.013,-0.5);
-    s.kaleci.position.x=0; s.kaleci.rotation.z=0;
-    s.anim=false;
-    if(d) d.textContent=`Atış ${s.atis+1}/${s.toplam} • Gol: ${s.gol}`;
-  }, 900);
-}
-function p3Bitir(){
-  const s=_p3; if(!s)return;
-  s.bitti=true; if(s.raf)cancelAnimationFrame(s.raf);
-  if(s.gol>=3)cocukKutla('penalti');
-  const el=document.getElementById('oyunlarList');
-  el.innerHTML=`
-    <div onclick="p3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
-    <div class="card" style="text-align:center">
-      <div style="font-size:3rem">${s.gol>=3?'🏆':'⚽'}</div>
-      <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">${s.toplam} atıştan ${s.gol} GOL!</div>
-      <button onclick="penalti3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Tekrar Oyna</button>
-    </div>`;
-  try{ s.ren.dispose(); }catch(e){}
-  _p3=null;
-}
-function p3Cik(){ if(_p3){ _p3.bitti=true; if(_p3.raf)cancelAnimationFrame(_p3.raf); try{_p3.ren.dispose();}catch(e){} _p3=null; } tamEkranKapat(); oyunGeriDon(); }
-
-
-
 
 // ---------- 🌀 3D FRİKİK (baraj + falso) ----------
 let _f3=null;
