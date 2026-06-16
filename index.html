@@ -621,6 +621,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="card">
 <div class="card-title">🔔 Yeni Hatırlatıcı</div>
 <div class="fg"><input type="text" id="remTitle" placeholder="Hatırlatıcı adı..."></div>
+<div class="fg"><textarea id="remNote" placeholder="📝 Not (isteğe bağlı)... örn. detay, açıklama" style="width:100%;min-height:60px;padding:10px;border:1px solid var(--b);border-radius:10px;font-size:0.92rem;resize:vertical;font-family:inherit;background:var(--bg);color:var(--t)"></textarea></div>
 <div class="row">
 <div class="fg"><label>📅 Tarih</label><input type="date" id="remDate"></div>
 <div class="fg"><label>🕐 Saat</label><input type="time" id="remTime"></div>
@@ -658,7 +659,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <button class="pill" id="dtab-ilmihal" onclick="openDinimTab('ilmihal',this)">📖 İlmihal</button>
   <button class="pill" id="dtab-hadis" onclick="openDinimTab('hadis',this)">📜 Hadis</button>
   <button class="pill" id="dtab-siyer" onclick="openDinimTab('siyer',this)">🌙 Siyer</button>
-  <button class="pill" id="dtab-seslikitap" onclick="openDinimTab('seslikitap',this)">🎧 Sesli Kitap</button>
+  <button class="pill" id="dtab-kitaplar" onclick="openDinimTab('kitaplar',this)">📚 Kitaplar</button>
 </div>
 
 <!-- DUALAR -->
@@ -737,16 +738,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="card-title">📖 İlmihal</div>
   <div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0;margin-bottom:12px;scrollbar-width:none">
     <button class="pill active" id="ilmtab-genel" onclick="openIlmihalTab('genel',this)">📚 Genel</button>
+    <button class="pill" id="ilmtab-namaz" onclick="openIlmihalTab('namaz',this)">🕌 Namaz</button>
+    <button class="pill" id="ilmtab-oruc" onclick="openIlmihalTab('oruc',this)">🌙 Oruç</button>
+    <button class="pill" id="ilmtab-zekat" onclick="openIlmihalTab('zekat',this)">💰 Zekât</button>
+    <button class="pill" id="ilmtab-hac" onclick="openIlmihalTab('hac',this)">🕋 Hac</button>
     <button class="pill" id="ilmtab-32farz" onclick="openIlmihalTab('32farz',this)">📋 32 Farz</button>
     <button class="pill" id="ilmtab-54farz" onclick="openIlmihalTab('54farz',this)">📋 54 Farz</button>
-    <button class="pill" id="ilmtab-kerahat" onclick="openIlmihalTab('kerahat',this)">⛔ Kerahat</button>
-    <button class="pill" id="ilmtab-kitaplar" onclick="openIlmihalTab('kitaplar',this)">📚 Kitaplar</button>
   </div>
   <div id="ilm-genel"><div id="ilmihalList"></div></div>
+  <div id="ilm-namaz" style="display:none">
+    <div id="namazBilgiList"></div>
+    <div style="margin-top:18px;border-top:2px solid var(--b);padding-top:14px">
+      <div style="font-weight:700;color:#E53935;font-size:1rem;margin-bottom:10px">⛔ Namaz Kılınmayan Vakitler (Kerahat)</div>
+      <div id="kerahatBilgiList"></div>
+    </div>
+  </div>
+  <div id="ilm-oruc" style="display:none"><div id="orucBilgiList"></div></div>
+  <div id="ilm-zekat" style="display:none"><div id="zekatBilgiList"></div></div>
+  <div id="ilm-hac" style="display:none"><div id="hacBilgiList"></div></div>
   <div id="ilm-32farz" style="display:none"><div id="farz32List"></div></div>
   <div id="ilm-54farz" style="display:none"><div id="farz54List"></div></div>
-  <div id="ilm-kerahat" style="display:none"><div id="kerahatBilgiList"></div></div>
-  <div id="ilm-kitaplar" style="display:none"><div id="kitapArea"></div></div>
 </div>
 </div>
 
@@ -772,10 +783,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <!-- SESLİ KİTAP -->
-<div id="dsec-seslikitap" style="display:none">
+<!-- KİTAPLAR (alt sekmeli: Kitaplar + Sesli Kitap) -->
+<div id="dsec-kitaplar" style="display:none">
 <div class="card">
-  <div class="card-title">🎧 Sesli Kitap & Kaynaklar</div>
-  <div id="seslikitapList"></div>
+  <div class="card-title">📚 Kitaplar</div>
+  <div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0;margin-bottom:12px;scrollbar-width:none">
+    <button class="pill active" id="ktab-kitap" onclick="openKitaplarTab('kitap',this)">📖 Kitaplar</button>
+    <button class="pill" id="ktab-sesli" onclick="openKitaplarTab('sesli',this)">🎧 Sesli Kitap</button>
+  </div>
+  <div id="kt-kitap"><div id="kitapArea"></div></div>
+  <div id="kt-sesli" style="display:none"><div id="seslikitapList"></div></div>
 </div>
 </div>
 
@@ -1835,6 +1852,8 @@ async function fetchWeather(lat,lng,name){
 // ==================== HATIRLATICI (TARİH + SAAT) ====================
 async function addReminder() {
   const title = document.getElementById('remTitle').value.trim();
+  const noteEl = document.getElementById('remNote');
+  const note = noteEl ? noteEl.value.trim() : '';
   const date = document.getElementById('remDate').value;
   const time = document.getElementById('remTime').value;
   if (!title) return notify('Başlık girin!', 'error');
@@ -1848,7 +1867,7 @@ async function addReminder() {
   const rems = getData('reminders');
   const newId = Date.now();
   rems.push({
-    id: newId, title, date: remDate, time, sound, repeat, enabled: true, firedDate: null
+    id: newId, title, note, date: remDate, time, sound, repeat, enabled: true, firedDate: null
   });
   setData('reminders', rems);
 
@@ -1893,6 +1912,7 @@ async function addReminder() {
   }
 
   document.getElementById('remTitle').value = '';
+  const rn=document.getElementById('remNote'); if(rn) rn.value='';
   document.getElementById('remTime').value = '';
   document.getElementById('remDate').value = '';
   renderReminders();
@@ -1994,6 +2014,7 @@ function renderReminders(){
     <div class="rem-item">
       <div class="rem-info">
         <div class="rem-title">${rm.title}</div>
+        ${rm.note?`<div style="font-size:0.82rem;color:var(--tm);margin:2px 0;line-height:1.4">📝 ${rm.note}</div>`:''}
         <div class="rem-time">🕐 ${rm.time}</div>
         <div class="rem-date">📅 ${rm.date||'Bugün'} • 🔄 ${repeatLabels[rm.repeat]||rm.repeat}</div>
       </div>
@@ -2175,7 +2196,7 @@ let _dinimActiveTab = 'dualar';
 
 function openDinimTab(tab, btn) {
   _dinimActiveTab = tab;
-  ['dualar','esma','zikir','ilmihal','hadis','siyer','seslikitap'].forEach(t => {
+  ['dualar','esma','zikir','ilmihal','hadis','siyer','kitaplar'].forEach(t => {
     const sec = document.getElementById('dsec-'+t);
     const b = document.getElementById('dtab-'+t);
     if(sec) sec.style.display = t === tab ? 'block' : 'none';
@@ -2187,19 +2208,33 @@ function openDinimTab(tab, btn) {
   if(tab === 'ilmihal') { renderIlmihal(); renderFarz32(); renderFarz54(); }
   if(tab === 'hadis') { renderHadisler(); renderNeveviHadis(); }
   if(tab === 'siyer') renderSiyer();
-  if(tab === 'seslikitap') renderSesliKitap();
+  if(tab === 'kitaplar') openKitaplarTab('kitap', document.getElementById('ktab-kitap'));
+}
+// Kitaplar alt sekme (Kitaplar + Sesli Kitap)
+function openKitaplarTab(tab, btn) {
+  ['kitap','sesli'].forEach(t => {
+    const sec = document.getElementById('kt-'+t);
+    const b = document.getElementById('ktab-'+t);
+    if(sec) sec.style.display = t === tab ? 'block' : 'none';
+    if(b) b.classList.toggle('active', t === tab);
+  });
+  if(tab === 'kitap') renderKitap();
+  if(tab === 'sesli') renderSesliKitap();
 }
 
 // İlmihal alt sekme yönetimi
 function openIlmihalTab(tab, btn) {
-  ['genel','32farz','54farz','kerahat','kitaplar'].forEach(t => {
+  ['genel','namaz','oruc','zekat','hac','32farz','54farz'].forEach(t => {
     const sec = document.getElementById('ilm-'+t);
     const b = document.getElementById('ilmtab-'+t);
     if(sec) sec.style.display = t === tab ? 'block' : 'none';
     if(b) b.classList.toggle('active', t === tab);
   });
-  if(tab === 'kerahat') renderKerahatBilgi();
-  if(tab === 'kitaplar') renderKitap();
+  if(tab === 'genel') renderIlmihal();
+  if(tab === 'namaz') { renderNamazBilgi(); renderKerahatBilgi(); }
+  if(tab === 'oruc') renderOrucBilgi();
+  if(tab === 'zekat') renderZekatBilgi();
+  if(tab === 'hac') renderHacBilgi();
 }
 
 // Hadis alt sekme yönetimi
@@ -2572,14 +2607,48 @@ const ILMIHAL = [
 function renderIlmihal() {
   const el = document.getElementById('ilmihalList');
   if(!el) return;
-  el.innerHTML = ILMIHAL.map((k,i) => `
+  const okunan = JSON.parse(localStorage.getItem('ilmihalOkunan')||'[]');
+  el.innerHTML = ILMIHAL.map((k,i) => {
+    const ok = okunan.includes(i);
+    return `
     <div style="border-bottom:1px solid var(--b);padding:14px 0">
-      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleIlmihal(${i})">
-        <div style="font-weight:700;color:var(--p);font-size:0.95rem">${k.baslik}</div>
-        <span id="ilmarrow-${i}" style="color:var(--tm);font-size:0.8rem">▼</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1" onclick="toggleIlmihal(${i})">
+          <span onclick="event.stopPropagation();ilmihalIsaretle(${i})" style="font-size:1.3rem;cursor:pointer">${ok?'✅':'⬜'}</span>
+          <div style="font-weight:700;color:var(--p);font-size:0.95rem">${k.baslik}</div>
+        </div>
+        <span id="ilmarrow-${i}" style="color:var(--tm);font-size:0.8rem;cursor:pointer" onclick="toggleIlmihal(${i})">▼</span>
       </div>
-      <div id="ilmbody-${i}" style="display:none;margin-top:10px;font-size:0.88rem;line-height:1.8;color:var(--t);white-space:pre-line">${k.icerik}${k.video?`<a href="${k.video}" target="_blank" rel="noopener" style="display:block;margin-top:12px;background:#c4302b;color:#fff;text-align:center;padding:12px;border-radius:10px;font-weight:700;text-decoration:none;white-space:normal">▶️ Videoyu İzle (YouTube)</a>`:''}</div>
-    </div>`).join('');
+      <div id="ilmbody-${i}" style="display:none;margin-top:10px;font-size:0.88rem;line-height:1.8;color:var(--t);white-space:pre-line">${k.icerik}${k.video?`<a href="${k.video}" target="_blank" rel="noopener" style="display:block;margin-top:12px;background:#c4302b;color:#fff;text-align:center;padding:12px;border-radius:10px;font-weight:700;text-decoration:none;white-space:normal">▶️ Videoyu İzle (YouTube)</a>`:''}
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="ilmihalSesli(${i})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:9px;border-radius:10px;font-weight:600;font-size:0.82rem;cursor:pointer">🔊 Sesli Dinle</button>
+          <button onclick="ilmihalIsaretle(${i})" style="flex:1;background:${ok?'#9E9E9E':'#1B5E20'};color:#fff;border:none;padding:9px;border-radius:10px;font-weight:600;font-size:0.82rem;cursor:pointer">${ok?'↩️ Geri Al':'✅ Okudum'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function ilmihalIsaretle(i) {
+  let okunan = JSON.parse(localStorage.getItem('ilmihalOkunan')||'[]');
+  if(okunan.includes(i)) okunan = okunan.filter(x=>x!==i);
+  else { okunan.push(i); Sound.play('bell'); }
+  localStorage.setItem('ilmihalOkunan', JSON.stringify(okunan));
+  renderIlmihal();
+}
+function ilmihalSesli(i) {
+  const k = ILMIHAL[i];
+  if(!k) return;
+  if('speechSynthesis' in window){
+    try {
+      const metin = (k.baslik.replace(/[^\wçğışöüÇĞİŞÖÜ\s]/g,'') ) + '. ' + k.icerik;
+      const u = new SpeechSynthesisUtterance(metin);
+      u.lang='tr-TR'; u.rate=0.9;
+      const trSes=window.speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith('tr'));
+      if(trSes)u.voice=trSes;
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+      notify('🔊 Okunuyor...','info');
+    } catch(e){ notify('Ses çalınamadı','error'); }
+  } else notify('Cihazınız sesli okumayı desteklemiyor','info');
 }
 
 function toggleIlmihal(i) {
@@ -3793,65 +3862,89 @@ const YAPBOZ_GORSELLER = {
 };
 let _yapbozState = null;
 function yapbozBasla() {
+  // Zorluk seçim ekranı
+  const el = document.getElementById('oyunlarList');
+  el.innerHTML = `
+    <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">🧩 Yapboz</div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:12px 0">Zorluk seç:</div>
+      <button onclick="yapbozOyna(2)" style="width:100%;background:#43A047;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:700;font-size:1.05rem;margin-bottom:10px;cursor:pointer">😊 Kolay (2×2 · 4 parça)</button>
+      <button onclick="yapbozOyna(3)" style="width:100%;background:#FB8C00;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:700;font-size:1.05rem;cursor:pointer">🙂 Orta (3×3 · 9 parça)</button>
+    </div>`;
+}
+function yapbozOyna(boyut) {
   const keys = Object.keys(YAPBOZ_GORSELLER);
   const key = keys[Math.floor(Math.random()*keys.length)];
-  let dizi = [1,2,3,4,5,6,7,8,0];
-  for(let i=0;i<80;i++){
-    const bos = dizi.indexOf(0);
-    const komsular = yapbozKomsular(bos);
-    const sec = komsular[Math.floor(Math.random()*komsular.length)];
-    [dizi[bos],dizi[sec]]=[dizi[sec],dizi[bos]];
-  }
-  _yapbozState = { dizi, key, hamle:0 };
+  const toplam = boyut*boyut;
+  // Karışık parça havuzu (0..toplam-1 = doğru pozisyonlar)
+  let havuz = [];
+  for(let i=0;i<toplam;i++) havuz.push(i);
+  havuz.sort(()=>Math.random()-0.5);
+  // Izgara: her hücre null (boş) başlar
+  _yapbozState = { boyut, key, izgara: new Array(toplam).fill(null), havuz, seciliParca:null, hamle:0 };
   yapbozGoster();
 }
-function yapbozKomsular(idx) {
-  const r = Math.floor(idx/3), c = idx%3;
-  const k = [];
-  if(r>0) k.push(idx-3);
-  if(r<2) k.push(idx+3);
-  if(c>0) k.push(idx-1);
-  if(c<2) k.push(idx+1);
-  return k;
-}
-// Bir parçanın (hangi sayı = orijinal konum) SVG karesini üretir
-function yapbozParca(parcaNo, gorselSvg) {
-  // parcaNo 1-8: orijinal sıra. 0-indexli pozisyon: parcaNo-1
-  const pos = parcaNo - 1;
-  const r = Math.floor(pos/3), c = pos%3;
-  // viewBox'ı o parçaya kaydır: her parça 100x100
-  return `<svg viewBox="${c*100} ${r*100} 100 100" style="width:100%;height:100%;display:block">${gorselSvg}</svg>`;
+function yapbozParca(pos, gorselSvg, boyut) {
+  const r = Math.floor(pos/boyut), c = pos%boyut;
+  const dim = 100/boyut*boyut; // viewBox bütün resmi 300 birim varsayar
+  const cell = 300/boyut;
+  return `<svg viewBox="${c*cell} ${r*cell} ${cell} ${cell}" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block">${gorselSvg}</svg>`;
 }
 function yapbozGoster() {
   const el = document.getElementById('oyunlarList');
   const st = _yapbozState;
   const gorsel = YAPBOZ_GORSELLER[st.key];
-  const cozuldu = st.dizi.every((v,i)=> i===8 ? v===0 : v===i+1);
+  const cozuldu = st.izgara.every((v,i)=> v===i);
   el.innerHTML = `
     <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
       <div class="card-title" style="justify-content:center">🧩 ${gorsel.ad}</div>
-      <div style="font-size:0.8rem;color:var(--tm);margin-bottom:10px">Parçaları doğru yere kaydır! Boşluğun yanındakine dokun. Hamle: ${st.hamle}</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:300px;margin:0 auto;background:#5D4037;padding:3px;border-radius:8px">
-        ${st.dizi.map((v,i)=>{
-          if(v===0) return `<div style="aspect-ratio:1;background:#f0f0f0;border-radius:4px"></div>`;
-          return `<div onclick="yapbozOyna(${i})" style="aspect-ratio:1;cursor:pointer;overflow:hidden;border-radius:4px;background:#fff">${yapbozParca(v, gorsel.svg)}</div>`;
+      <div style="font-size:0.8rem;color:var(--tm);margin-bottom:6px">Aşağıdaki parçalardan birine dokun, sonra yerleştireceğin boş kareye dokun!</div>
+      <!-- Küçük önizleme (hedef resim) -->
+      <div style="margin:0 auto 10px;width:80px;height:80px;border:2px solid var(--p);border-radius:8px;overflow:hidden;opacity:0.85">
+        <svg viewBox="0 0 300 300" style="width:100%;height:100%;display:block">${gorsel.svg}</svg>
+      </div>
+      <!-- Izgara -->
+      <div style="display:grid;grid-template-columns:repeat(${st.boyut},1fr);gap:3px;max-width:${st.boyut===2?'220':'300'}px;margin:0 auto;background:#5D4037;padding:3px;border-radius:8px">
+        ${st.izgara.map((v,i)=>{
+          if(v===null) return `<div onclick="yapbozYerlestir(${i})" style="aspect-ratio:1;background:${st.seciliParca!==null?'#C8E6C9':'#ECEFF1'};border:2px dashed #90A4AE;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#90A4AE;font-size:0.7rem">${st.seciliParca!==null?'➕':''}</div>`;
+          return `<div onclick="yapbozGeriAl(${i})" style="aspect-ratio:1;cursor:pointer;overflow:hidden;border-radius:4px;background:#fff">${yapbozParca(v, gorsel.svg, st.boyut)}</div>`;
         }).join('')}
       </div>
-      ${cozuldu?`<div style="margin-top:14px"><div style="font-size:2.5rem">🎉</div><div style="font-weight:700;color:#4CAF50">Yapbozu çözdün, maşallah!</div></div>`:''}
-      <button onclick="yapbozBasla()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:700;margin-top:12px;cursor:pointer">🔄 Yeni Yapboz</button>
-      <div style="font-size:0.75rem;color:var(--tm);margin-top:8px">İpucu: Tamamlanınca resim oluşur 👆</div>
+      ${!cozuldu?`
+      <!-- Parça havuzu -->
+      <div style="margin-top:12px;font-size:0.78rem;color:var(--tm)">Parçalar:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px">
+        ${st.havuz.map((p,hi)=>`<div onclick="yapbozParcaSec(${hi})" style="width:56px;height:56px;overflow:hidden;border-radius:6px;cursor:pointer;border:3px solid ${st.seciliParca===hi?'#FF9800':'#fff'};box-shadow:0 2px 5px rgba(0,0,0,0.15)">${yapbozParca(p, gorsel.svg, st.boyut)}</div>`).join('')}
+      </div>`:''}
+      ${cozuldu?`<div style="margin-top:14px"><div style="font-size:2.5rem">🎉</div><div style="font-weight:700;color:#4CAF50">Yapbozu tamamladın, maşallah!</div></div>`:''}
+      <button onclick="yapbozBasla()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:700;margin-top:14px;cursor:pointer">🔄 Yeni Yapboz</button>
     </div>`;
   if(cozuldu) cocukKutla('yapboz');
 }
-function yapbozOyna(i) {
+function yapbozParcaSec(havuzIdx) {
+  _yapbozState.seciliParca = (_yapbozState.seciliParca===havuzIdx) ? null : havuzIdx;
+  yapbozGoster();
+}
+function yapbozYerlestir(izgaraIdx) {
   const st = _yapbozState;
-  const bos = st.dizi.indexOf(0);
-  if(yapbozKomsular(i).includes(bos)) {
-    [st.dizi[i],st.dizi[bos]]=[st.dizi[bos],st.dizi[i]];
-    st.hamle++;
-    yapbozGoster();
-  }
+  if(st.seciliParca===null) return;
+  const parca = st.havuz[st.seciliParca];
+  st.izgara[izgaraIdx] = parca;
+  st.havuz.splice(st.seciliParca, 1);
+  st.seciliParca = null;
+  st.hamle++;
+  if(parca===izgaraIdx){ Sound.play('bell'); } else { Sound.play('tick'); }
+  yapbozGoster();
+}
+function yapbozGeriAl(izgaraIdx) {
+  const st = _yapbozState;
+  const parca = st.izgara[izgaraIdx];
+  if(parca===null) return;
+  st.havuz.push(parca);
+  st.izgara[izgaraIdx] = null;
+  yapbozGoster();
 }
 
 // ---------- 🔍 OYUN 12: HANGİSİ? (Resim Tanıma - küçükler için) ----------
@@ -4018,6 +4111,28 @@ const BOYAMA_YAPILAR = {
       <rect id="bz-p3" onclick="boyamaBoya('p3')" x="105" y="140" width="35" height="35" fill="${b.p3||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
       <rect id="bz-p4" onclick="boyamaBoya('p4')" x="160" y="140" width="35" height="35" fill="${b.p4||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
       <rect id="bz-kapi" onclick="boyamaBoya('kapi')" x="130" y="205" width="40" height="65" fill="${b.kapi||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+    </svg>`
+  },
+  park: {
+    ad:'Park Alanı 🏞️',
+    bolgeler:['gokyuzu','cimen','gunes','agacGovde','agacYaprak','salincakDirek','salincakKoltuk','yol','cicek1','cicek2'],
+    svg:(b)=>`<svg viewBox="0 0 300 300" style="width:100%;max-width:300px;height:auto">
+      <rect id="bz-gokyuzu" onclick="boyamaBoya('gokyuzu')" x="0" y="0" width="300" height="200" fill="${b.gokyuzu||'#f0f0f0'}" stroke="#ccc" style="cursor:pointer"/>
+      <rect id="bz-cimen" onclick="boyamaBoya('cimen')" x="0" y="200" width="300" height="100" fill="${b.cimen||'#fff'}" stroke="#333" style="cursor:pointer"/>
+      <circle id="bz-gunes" onclick="boyamaBoya('gunes')" cx="250" cy="50" r="28" fill="${b.gunes||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <!-- Yol -->
+      <path id="bz-yol" onclick="boyamaBoya('yol')" d="M110 300 L130 200 L170 200 L190 300 Z" fill="${b.yol||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <!-- Ağaç -->
+      <rect id="bz-agacGovde" onclick="boyamaBoya('agacGovde')" x="48" y="150" width="20" height="60" fill="${b.agacGovde||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <circle id="bz-agacYaprak" onclick="boyamaBoya('agacYaprak')" cx="58" cy="130" r="45" fill="${b.agacYaprak||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <!-- Salıncak -->
+      <path id="bz-salincakDirek" onclick="boyamaBoya('salincakDirek')" d="M210 210 L225 120 L255 120 L240 210 M225 120 L255 120" fill="none" stroke="${b.salincakDirek||'#999'}" stroke-width="6" style="cursor:pointer"/>
+      <rect id="bz-salincakKoltuk" onclick="boyamaBoya('salincakKoltuk')" x="228" y="165" width="24" height="8" fill="${b.salincakKoltuk||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <line x1="232" y1="135" x2="230" y2="165" stroke="#666" stroke-width="2"/>
+      <line x1="248" y1="135" x2="250" y2="165" stroke="#666" stroke-width="2"/>
+      <!-- Çiçekler -->
+      <circle id="bz-cicek1" onclick="boyamaBoya('cicek1')" cx="100" cy="240" r="12" fill="${b.cicek1||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <circle id="bz-cicek2" onclick="boyamaBoya('cicek2')" cx="270" cy="250" r="12" fill="${b.cicek2||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
     </svg>`
   }
 };
@@ -7326,11 +7441,11 @@ const Y3_RENKLER = [
   {ad:'Turuncu',hex:0xFB8C00}, {ad:'Mor',hex:0x8E24AA},
 ];
 const Y3_PISTLER = {
-  otoyol: { ad:'🛣️ Otoyol', ac:'Geniş düz otoyol, hızlan!', gok:0x87CEEB, zemin:0x4CAF50, yol:0x37474F, sis:[60,170], cizgi:0xFFEB3B, agac:0x2E7D32, max:2.3, trafikHiz:0.5, viraj:0.0 },
-  dag: { ad:'⛰️ Dağ Yolu', ac:'Virajlı dağ yolu, dikkatli sür!', gok:0x90CAF9, zemin:0x66BB6A, yol:0x455A64, sis:[50,150], cizgi:0xFFFFFF, agac:0x1B5E20, max:2.0, trafikHiz:0.45, viraj:1.0 },
-  ralli: { ad:'🏜️ Ralli (Toprak)', ac:'Virajlı toprak pist, kay!', gok:0xFFB74D, zemin:0x8D6E63, yol:0xA1887F, sis:[45,130], cizgi:0xFFFFFF, agac:0x6D4C41, max:2.1, trafikHiz:0.4, kayma:true, viraj:1.3 },
-  sehir: { ad:'🏙️ Şehir', ac:'Binalar arası şehir trafiği!', gok:0xB0BEC5, zemin:0x607D8B, yol:0x424242, sis:[45,130], cizgi:0xFFEB3B, agac:0x90A4AE, max:2.1, trafikHiz:0.55, viraj:0.6, bina:true },
-  gece: { ad:'🌙 Gece Yarışı', ac:'Virajlı gece pisti, farını kullan!', gok:0x0D1B2A, zemin:0x14281C, yol:0x21282E, sis:[30,95], cizgi:0xFFF176, agac:0x16301B, max:2.5, trafikHiz:0.55, gece:true, viraj:0.9 },
+  otoyol: { ad:'🛣️ Otoyol', ac:'Hafif virajlı hızlı otoyol!', gok:0x87CEEB, zemin:0x4CAF50, yol:0x37474F, sis:[60,170], cizgi:0xFFEB3B, agac:0x2E7D32, max:2.3, trafikHiz:0.5, viraj:0.5, hedef:60 },
+  dag: { ad:'⛰️ Dağ Yolu', ac:'Virajlı dağ yolu, dikkatli sür!', gok:0x90CAF9, zemin:0x66BB6A, yol:0x455A64, sis:[50,150], cizgi:0xFFFFFF, agac:0x1B5E20, max:2.0, trafikHiz:0.45, viraj:1.3, hedef:50 },
+  ralli: { ad:'🏜️ Ralli (Toprak)', ac:'Çok virajlı toprak pist, kay!', gok:0xFFB74D, zemin:0x8D6E63, yol:0xA1887F, sis:[45,130], cizgi:0xFFFFFF, agac:0x6D4C41, max:2.1, trafikHiz:0.4, kayma:true, viraj:1.7, hedef:50 },
+  sehir: { ad:'🏙️ Şehir', ac:'Binalar arası virajlı şehir!', gok:0xB0BEC5, zemin:0x607D8B, yol:0x424242, sis:[45,130], cizgi:0xFFEB3B, agac:0x90A4AE, max:2.1, trafikHiz:0.55, viraj:1.0, bina:true, hedef:55 },
+  gece: { ad:'🌙 Gece Yarışı', ac:'Virajlı gece pisti, farını kullan!', gok:0x0D1B2A, zemin:0x14281C, yol:0x21282E, sis:[30,95], cizgi:0xFFF176, agac:0x16301B, max:2.5, trafikHiz:0.55, gece:true, viraj:1.2, hedef:60 },
 };
 function yaris3dBasla(){
   const el=document.getElementById('oyunlarList');
@@ -7363,7 +7478,7 @@ function yaris3dOyna(pk){
       <div class="card-title" style="justify-content:center">${Y3_PISTLER[pk].ad}</div>
       ${tamEkranBtn()}
       <div style="display:flex;justify-content:space-around;font-weight:700;color:var(--p);margin-bottom:8px">
-        <span>🏁 <span id="y3Skor">0</span></span><span>🚀 <span id="y3Hiz">60 km/s</span></span>
+        <span>🚗 <span id="y3Skor">0</span></span><span>🚀 <span id="y3Hiz">60 km/s</span></span><span id="y3Mesafe">🏁 50</span>
       </div>
       <div id="y3Kap" style="width:100%;max-width:340px;margin:0 auto;border-radius:12px;overflow:hidden;touch-action:none;border:3px solid #263238;background:#555;min-height:200px">
         <div style="padding:40px;color:#ddd">⏳ 3D motor yükleniyor...</div>
@@ -7459,11 +7574,26 @@ function y3Kur(pk){
   // Oyuncu arabası (seçilen renk)
   const oyuncu=y3ArabaYap(Y3_RENKLER[_y3RenkSecili].hex); sah.add(oyuncu);
   if(cfg.gece){ const far=new THREE.PointLight(0xFFF59D,1.6,40); far.position.set(0,1.6,2.5); oyuncu.add(far); }
+  // Başlangıç çizgisi (damalı) — başta görünür, geride kalır
+  function damaliCizgi(){
+    const g=new THREE.Group();
+    for(let cx=0;cx<13;cx++){
+      for(let cz=0;cz<2;cz++){
+        const beyazmi=(cx+cz)%2===0;
+        const kare=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshLambertMaterial({color:beyazmi?0xffffff:0x111111}));
+        kare.rotation.x=-Math.PI/2; kare.position.set(-6+cx,0.03,cz); g.add(kare);
+      }
+    }
+    return g;
+  }
+  const baslangicCizgi=damaliCizgi(); baslangicCizgi.position.z=-2; sah.add(baslangicCizgi);
+  const bitisCizgi=damaliCizgi(); bitisCizgi.visible=false; sah.add(bitisCizgi);
   const renkler=[0xE53935,0x1E88E5,0xFB8C00,0x8E24AA,0x00ACC1,0xF5F5F5];
   _y3={ren,sah,kam,oyuncu,engeller:[],yolSegler,segBoy,segSay,agaclar,bulutlar,renkler,cfg,
     x:0,hedef:0,direksiyon:0,gaz:false,fren:false,
     hiz:0.7,skor:0,can:3,sersem:0,tik:0,raf:null,bitti:false,
-    virajFaz:0, yolKayma:0, mesafe:0};
+    virajFaz:0, yolKayma:0, mesafe:0,
+    baslangicCizgi, bitisCizgi, hedefMesafe:cfg.hedef||50, bitisGosterildi:false};
   y3PedalBagla();
   y3Dongu();
 }
@@ -7499,15 +7629,34 @@ function y3Dongu(){
   else if(s.fren) s.hiz=Math.max(0.15, s.hiz-0.04);
   else s.hiz=Math.max(0.35, s.hiz-0.004);
   y3SesGuncelle(s.hiz,s.gaz);
+  // Mesafe (yarış ilerlemesi)
+  s.mesafe += s.hiz*0.02;
+  const kalan = Math.max(0, s.hedefMesafe - s.mesafe);
+  // Başlangıç çizgisi geriye kayar, sahneden çıkınca gizle
+  if(s.baslangicCizgi && s.baslangicCizgi.visible){
+    s.baslangicCizgi.position.z += s.hiz;
+    s.baslangicCizgi.position.x = Math.sin(s.virajFaz + s.baslangicCizgi.position.z*0.015)*cfg.viraj*6;
+    if(s.baslangicCizgi.position.z>12) s.baslangicCizgi.visible=false;
+  }
+  // Bitiş çizgisi: hedefe yaklaşınca uzaktan belirir ve yaklaşır
+  if(kalan < 8 && !s.bitisGosterildi){
+    s.bitisGosterildi=true;
+    s.bitisCizgi.visible=true;
+    s.bitisCizgi.position.z=-150;
+  }
+  if(s.bitisGosterildi && s.bitisCizgi.visible){
+    s.bitisCizgi.position.z += s.hiz;
+    s.bitisCizgi.position.x = Math.sin(s.virajFaz + s.bitisCizgi.position.z*0.015)*cfg.viraj*6;
+    if(s.bitisCizgi.position.z>6){ y3Bitir(true); return; }
+  }
   // Viraj: zamanla değişen yol eğriliği
   s.virajFaz += s.hiz*0.012;
-  const viraj = Math.sin(s.virajFaz)*cfg.viraj; // -viraj..+viraj
+  const viraj = Math.sin(s.virajFaz)*cfg.viraj;
   // Direksiyon
   const tepki = cfg.kayma?0.09:0.15;
   s.hedef=Math.max(-4.5,Math.min(4.5, s.hedef + s.direksiyon*0.22*(0.6+s.hiz*0.4)));
   s.x+=(s.hedef-s.x)*tepki;
   if(cfg.kayma) s.x += Math.sin(s.tik*0.25)*0.012*s.hiz;
-  // Virajda araba dışa savrulur (otomatik), oyuncu karşı direksiyon vermeli
   s.x += viraj*0.25*s.hiz;
   s.x=Math.max(-6,Math.min(6,s.x));
   s.oyuncu.position.x=s.x;
@@ -7558,20 +7707,22 @@ function y3Dongu(){
   s.kam.rotation.z += -s.direksiyon*0.03 - viraj*0.02;
   const sk=document.getElementById('y3Skor'); if(sk) sk.textContent=s.skor;
   const hz=document.getElementById('y3Hiz'); if(hz) hz.textContent=Math.round(s.hiz*95)+' km/s';
+  const ms=document.getElementById('y3Mesafe'); if(ms) ms.textContent='🏁 '+Math.max(0,Math.round(s.hedefMesafe-s.mesafe));
   s.ren.render(s.sah,s.kam);
   s.raf=requestAnimationFrame(y3Dongu);
 }
-function y3Bitir(){
+function y3Bitir(kazandi){
   const s=_y3; if(!s) return;
   s.bitti=true; if(s.raf)cancelAnimationFrame(s.raf);
   y3SesDur();
-  if(s.skor>=10)cocukKutla('yaris');
+  if(kazandi) cocukKutla('yaris');
   const el=document.getElementById('oyunlarList');
   el.innerHTML=`
     <div onclick="y3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
-      <div style="font-size:3rem">${s.skor>=10?'🏆':'💥'}</div>
-      <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">Yarış bitti! Solladığın araba: ${s.skor}</div>
+      <div style="font-size:3.2rem">${kazandi?'🏁🏆':'💥'}</div>
+      <div style="font-size:1.25rem;font-weight:800;color:var(--p);margin:10px 0">${kazandi?'BİTİŞ! Yarışı tamamladın! 🎉':'Yarış bitti!'}</div>
+      <div style="font-size:0.95rem;color:var(--tm);margin-bottom:10px">Solladığın araba: ${s.skor}</div>
       <button onclick="yaris3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Renk/Pist Seç & Tekrar</button>
     </div>`;
   try{ s.ren.dispose(); }catch(e){}
@@ -8202,6 +8353,104 @@ function toggleFarz54(no) {
 }
 
 // ==================== KERAHAT VAKİTLERİ BİLGİSİ ====================
+
+
+// ==================== İLMİHAL: NAMAZ/ORUÇ/ZEKAT/HAC ====================
+const NAMAZ_BILGI = [
+  { baslik:"🕌 Namaz Nedir?", icerik:"Namaz, İslam'ın beş şartından biridir ve dinin direğidir. Günde beş vakit kılınması farzdır. Allah'a kulluğun en güzel ifadesidir ve müminin miracıdır.\n\nBeş vakit namaz:\n1. Sabah (2 rekat farz)\n2. Öğle (4 rekat farz)\n3. İkindi (4 rekat farz)\n4. Akşam (3 rekat farz)\n5. Yatsı (4 rekat farz)" },
+  { baslik:"💧 Namazın Şartları (Hazırlık)", icerik:"Namaza başlamadan önce yerine getirilmesi gereken şartlar:\n\n1. Hadesten taharet: Abdest almak veya gerekirse gusül yapmak.\n2. Necasetten taharet: Beden, elbise ve namaz kılınacak yerin temiz olması.\n3. Setr-i avret: Vücudun örtülmesi gereken yerlerini örtmek.\n4. İstikbal-i kıble: Kâbe'ye (kıbleye) yönelmek.\n5. Vakit: Namazın vaktinin girmiş olması.\n6. Niyet: Hangi namazı kıldığına kalben niyet etmek." },
+  { baslik:"🙏 Namazın Rükünleri (İçindeki Farzlar)", icerik:"Namazın içinde yapılan farzlar:\n\n1. İftitah tekbiri: 'Allâhü Ekber' diyerek namaza başlamak.\n2. Kıyam: Ayakta durmak.\n3. Kıraat: Kur'an'dan okumak (Fatiha ve bir sure).\n4. Rükû: Eğilmek.\n5. Secde: Alnı yere koymak (her rekatta iki kez).\n6. Ka'de-i ahire: Son oturuş (Ettehiyyatü miktarı oturmak)." },
+  { baslik:"🕌 Namaz Nasıl Kılınır? (Adım Adım)", icerik:"2 REKATLIK NAMAZ:\n\n1. NİYET: 'Niyet ettim Allah rızası için ... namazını kılmaya.'\n\n2. İFTİTAH TEKBİRİ: Eller kulak hizasına kaldırılır, 'Allâhü Ekber' denir, eller bağlanır.\n\n3. KIYAM: Sübhaneke → Eûzü Besmele → Fatiha → bir sure (örn. İhlas) okunur.\n\n4. RÜKÛ: 'Allâhü Ekber' denip eğilinir, 3 kez 'Sübhâne rabbiyel azîm' denir.\n\n5. DOĞRULMA: 'Semiallâhü limen hamideh', 'Rabbenâ lekel hamd' denir.\n\n6. SECDE: 'Allâhü Ekber' denip secdeye varılır, 3 kez 'Sübhâne rabbiyel a'lâ' denir.\n\n7. İki secde arası oturulur, tekrar secde yapılır. → 1 rekat tamam.\n\n8. SON OTURUŞ: Ettehiyyâtü, Allâhümme salli-barik, Rabbenâ duaları okunur.\n\n9. SELAM: Sağa ve sola 'Esselâmü aleyküm ve rahmetullâh' denir." },
+  { baslik:"📿 Namaz Tesbihatı", icerik:"Farz namazlardan sonra yapılır:\n\n1. 'Allâhümme entes-selâmü ve minkes-selâm...' denir.\n2. Ayetel Kürsî okunur.\n3. 33 kez Sübhânallah\n4. 33 kez Elhamdülillah\n5. 33 kez Allâhü Ekber\n6. 'Lâ ilâhe illallâhü vahdehû lâ şerîke leh...' okunur.\n7. Eller açılıp dua edilir." },
+  { baslik:"⏰ Namaz Vakitleri", icerik:"Sabah: Tan yerinin ağarmasından (imsak) güneş doğana kadar.\n\nÖğle: Güneş tam tepeden batıya kaydıktan sonra, ikindiye kadar.\n\nİkindi: Öğle vakti çıktıktan sonra, güneş batana kadar.\n\nAkşam: Güneş battıktan sonra, kızıllık kaybolana kadar.\n\nYatsı: Akşam vakti çıktıktan sonra, imsağa (sabaha) kadar." },
+];
+const ORUC_BILGI = [
+  { baslik:"🌙 Oruç Nedir?", icerik:"Oruç, İslam'ın beş şartından biridir. Ramazan ayında, imsak vaktinden iftar vaktine (akşam ezanına) kadar yemek, içmek ve orucu bozan davranışlardan uzak durmaktır.\n\nRamazan orucu, ergenlik çağına ulaşmış, akıllı her Müslümana farzdır." },
+  { baslik:"✅ Orucun Farzları", icerik:"1. Niyet etmek: 'Yarın Ramazan orucu tutmaya niyet ettim.'\n\n2. İmsak vaktinden iftar vaktine kadar orucu bozan şeylerden uzak durmak." },
+  { baslik:"🚫 Orucu Bozan ve Kaza Gerektiren Şeyler", icerik:"- Bilerek yemek veya içmek\n- Sigara içmek\n- Bilerek bir şey yutmak\n\nBunlar olunca sadece o günün orucu kaza edilir (sonradan bir gün tutulur)." },
+  { baslik:"⚠️ Orucu Bozan ve Kefaret Gerektiren Durumlar", icerik:"Ramazan'da bilerek ve kasten oruç bozulursa (örneğin bilerek yiyip içmek), hem kaza hem de kefaret gerekir.\n\nKefaret: Aralıksız 61 gün oruç tutmaktır. Buna güç yetmezse 60 fakir doyurulur." },
+  { baslik:"🆗 Orucu Bozmayan Şeyler", icerik:"- Unutarak yemek-içmek (oruç bozulmaz, devam edilir)\n- İğne yaptırmak (besleyici olmayan)\n- Kan aldırmak\n- Misvak veya diş fırçalamak (yutmadan)\n- Ağız çalkalamak\n- Gözüne damla damlatmak" },
+  { baslik:"💝 Orucun Faydaları ve Hikmeti", icerik:"Oruç; sabrı, iradeyi ve nefse hakimiyeti öğretir. Aç kalan, fakirlerin halini anlar ve şükretmeyi öğrenir.\n\nBedenen de dinlenme ve arınma sağlar. Oruç, kalkan gibi insanı kötülüklerden korur." },
+];
+const ZEKAT_BILGI = [
+  { baslik:"💰 Zekat Nedir?", icerik:"Zekat, İslam'ın beş şartından biridir. Belirli bir zenginliğe (nisaba) ulaşan Müslümanın, malının belli bir bölümünü ihtiyaç sahiplerine vermesidir.\n\nZekat, malı temizler ve bereketlendirir. Zengin ile fakir arasında köprü kurar, toplumsal dayanışmayı sağlar." },
+  { baslik:"📊 Nisab Miktarı", icerik:"Nisab, zekatın farz olması için gereken asgari zenginlik ölçüsüdür:\n\n- Altın: 80.18 gram\n- Gümüş: 561 gram\n- Para ve ticaret malı: Bu altın/gümüş değerine ulaşırsa.\n\nBu mala bir yıl (kameri) sahip olunması gerekir." },
+  { baslik:"🔢 Zekat Oranı", icerik:"Zekat oranı, malın kırkta biridir, yani %2.5'tir.\n\nÖrnek: 100.000 TL nisabı aşan birikiminiz varsa ve üzerinden bir yıl geçtiyse, 2.500 TL zekat verilir." },
+  { baslik:"🤲 Zekat Kimlere Verilir?", icerik:"Kur'an'da belirtilen 8 sınıf:\n\n1. Fakirler\n2. Miskinler (yoksullar)\n3. Zekat memurları\n4. Kalbi İslam'a ısındırılacaklar\n5. Köleler (azat için)\n6. Borçlular\n7. Allah yolunda olanlar\n8. Yolda kalmışlar" },
+  { baslik:"🚫 Zekat Kimlere Verilmez?", icerik:"- Anne, baba, dede, nine (usul)\n- Çocuk, torun (füru)\n- Eşe\n- Zengine\n- Gayrimüslime (zekat olarak)\n\nKardeşe, amcaya, dayıya, teyzeye, halaya verilebilir." },
+];
+const HAC_BILGI = [
+  { baslik:"🕋 Hac Nedir?", icerik:"Hac, İslam'ın beş şartından biridir. Gücü yeten (maddi ve bedeni) her Müslümanın ömründe bir kez Mekke'deki Kâbe'yi ziyaret edip belirli ibadetleri yapmasıdır.\n\nHac, Zilhicce ayında belirli günlerde yapılır. Müslümanların birlik ve kardeşliğinin en büyük göstergesidir." },
+  { baslik:"✅ Haccın Farzları", icerik:"1. İHRAM: Hacca niyet edip ihram denen dikişsiz elbiseyi giymek ve ihram yasaklarına uymak.\n\n2. ARAFAT VAKFESİ: Zilhicce'nin 9. günü Arafat'ta belirli süre bulunmak. (Haccın en önemli rüknü)\n\n3. ZİYARET TAVAFI: Kâbe'nin etrafında 7 kez dönmek." },
+  { baslik:"📋 Haccın Vacipleri", icerik:"- Safa ile Merve arasında sa'y yapmak (gidip gelmek)\n- Müzdelife'de vakfe yapmak\n- Şeytan taşlamak\n- Saçları tıraş etmek veya kısaltmak\n- Veda tavafı yapmak (Mekke dışından gelenler için)" },
+  { baslik:"👕 İhram ve Yasakları", icerik:"İhram, hacca/umreye niyetle girilen özel bir ibadet halidir. Erkekler dikişsiz iki parça beyaz örtü giyer.\n\nİhram yasakları:\n- Saç-sakal tıraşı, tırnak kesmek\n- Koku sürünmek\n- Dikişli elbise giymek (erkekler)\n- Avlanmak\n- Tartışmak, kavga etmek" },
+  { baslik:"🚶 Hac Nasıl Yapılır? (Özet)", icerik:"1. Mîkat denen yerde ihrama girilir.\n2. Mekke'ye varılır, Kâbe tavaf edilir.\n3. Safa-Merve arası sa'y yapılır.\n4. Zilhicce 8: Mina'ya gidilir.\n5. Zilhicce 9: Arafat'ta vakfe yapılır (haccın özü).\n6. Akşam Müzdelife'ye geçilir.\n7. Zilhicce 10: Şeytan taşlanır, kurban kesilir, tıraş olunur.\n8. Ziyaret tavafı yapılır.\n9. Bayram günleri şeytan taşlamaya devam edilir.\n10. Veda tavafı ile hac tamamlanır." },
+  { baslik:"💝 Haccın Hikmeti", icerik:"Hac, tüm Müslümanların ırk, dil, zenginlik farkı gözetmeksizin aynı kıyafetle (ihram) bir araya gelmesidir. Eşitliği, kardeşliği ve Allah'a teslimiyeti öğretir.\n\nHac, insanın günahlarından arınması ve yeniden doğması gibidir." },
+];
+
+// Ortak ilmihal bilgi render motoru (sesli + check)
+function ilmihalBilgiRender(liste, listEl, anahtar) {
+  const el = document.getElementById(listEl);
+  if(!el) return;
+  const okunan = JSON.parse(localStorage.getItem('okunan_'+anahtar)||'[]');
+  window['_ilmBilgi_'+anahtar] = liste;
+  el.innerHTML = liste.map((k,i) => {
+    const ok = okunan.includes(i);
+    return `
+    <div style="border-bottom:1px solid var(--b);padding:14px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1" onclick="ilmBilgiToggle('${anahtar}',${i})">
+          <span onclick="event.stopPropagation();ilmBilgiIsaretle('${anahtar}',${i})" style="font-size:1.3rem;cursor:pointer">${ok?'✅':'⬜'}</span>
+          <div style="font-weight:700;color:var(--p);font-size:0.95rem">${k.baslik}</div>
+        </div>
+        <span id="ilmb-arrow-${anahtar}-${i}" style="color:var(--tm);font-size:0.8rem;cursor:pointer" onclick="ilmBilgiToggle('${anahtar}',${i})">▼</span>
+      </div>
+      <div id="ilmb-body-${anahtar}-${i}" style="display:none;margin-top:10px;font-size:0.88rem;line-height:1.8;color:var(--t);white-space:pre-line">${k.icerik}
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="ilmBilgiSesli('${anahtar}',${i})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:9px;border-radius:10px;font-weight:600;font-size:0.82rem;cursor:pointer">🔊 Sesli Dinle</button>
+          <button onclick="ilmBilgiIsaretle('${anahtar}',${i})" style="flex:1;background:${ok?'#9E9E9E':'#1B5E20'};color:#fff;border:none;padding:9px;border-radius:10px;font-weight:600;font-size:0.82rem;cursor:pointer">${ok?'↩️ Geri Al':'✅ Okudum'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function ilmBilgiToggle(anahtar,i){
+  const b=document.getElementById('ilmb-body-'+anahtar+'-'+i);
+  const a=document.getElementById('ilmb-arrow-'+anahtar+'-'+i);
+  const open=b.style.display==='none';
+  b.style.display=open?'block':'none';
+  a.textContent=open?'▲':'▼';
+}
+function ilmBilgiIsaretle(anahtar,i){
+  let okunan=JSON.parse(localStorage.getItem('okunan_'+anahtar)||'[]');
+  if(okunan.includes(i)) okunan=okunan.filter(x=>x!==i);
+  else { okunan.push(i); Sound.play('bell'); }
+  localStorage.setItem('okunan_'+anahtar, JSON.stringify(okunan));
+  const liste=window['_ilmBilgi_'+anahtar];
+  const listEl={namaz:'namazBilgiList',oruc:'orucBilgiList',zekat:'zekatBilgiList',hac:'hacBilgiList'}[anahtar];
+  ilmihalBilgiRender(liste, listEl, anahtar);
+}
+function ilmBilgiSesli(anahtar,i){
+  const liste=window['_ilmBilgi_'+anahtar];
+  const k=liste[i]; if(!k) return;
+  if('speechSynthesis' in window){
+    try{
+      const metin=k.baslik.replace(/[^\wçğışöüÇĞİŞÖÜ\s]/g,'')+'. '+k.icerik;
+      const u=new SpeechSynthesisUtterance(metin);
+      u.lang='tr-TR'; u.rate=0.9;
+      const trSes=window.speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith('tr'));
+      if(trSes)u.voice=trSes;
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+      notify('🔊 Okunuyor...','info');
+    }catch(e){ notify('Ses çalınamadı','error'); }
+  } else notify('Cihazınız sesli okumayı desteklemiyor','info');
+}
+function renderNamazBilgi(){ ilmihalBilgiRender(NAMAZ_BILGI,'namazBilgiList','namaz'); }
+function renderOrucBilgi(){ ilmihalBilgiRender(ORUC_BILGI,'orucBilgiList','oruc'); }
+function renderZekatBilgi(){ ilmihalBilgiRender(ZEKAT_BILGI,'zekatBilgiList','zekat'); }
+function renderHacBilgi(){ ilmihalBilgiRender(HAC_BILGI,'hacBilgiList','hac'); }
+
+
 function renderKerahatBilgi(){
   const el = document.getElementById('kerahatBilgiList');
   if(!el) return;
