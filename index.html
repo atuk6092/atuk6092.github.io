@@ -738,6 +738,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="card-title">📖 İlmihal</div>
   <div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0;margin-bottom:12px;scrollbar-width:none">
     <button class="pill active" id="ilmtab-genel" onclick="openIlmihalTab('genel',this)">📚 Genel</button>
+    <button class="pill" id="ilmtab-itikad" onclick="openIlmihalTab('itikad',this)">☝️ İtikad</button>
     <button class="pill" id="ilmtab-namaz" onclick="openIlmihalTab('namaz',this)">🕌 Namaz</button>
     <button class="pill" id="ilmtab-oruc" onclick="openIlmihalTab('oruc',this)">🌙 Oruç</button>
     <button class="pill" id="ilmtab-zekat" onclick="openIlmihalTab('zekat',this)">💰 Zekât</button>
@@ -746,6 +747,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <button class="pill" id="ilmtab-54farz" onclick="openIlmihalTab('54farz',this)">📋 54 Farz</button>
   </div>
   <div id="ilm-genel"><div id="ilmihalList"></div></div>
+  <div id="ilm-itikad" style="display:none"><div id="itikadBilgiList"></div></div>
   <div id="ilm-namaz" style="display:none">
     <div id="namazBilgiList"></div>
     <div style="margin-top:18px;border-top:2px solid var(--b);padding-top:14px">
@@ -1929,6 +1931,7 @@ function editReminder(id){
     <div class="modal-handle"></div>
     <div class="modal-header"><h3>✏️ Düzenle</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="fg"><label>Başlık</label><input type="text" id="erTitle" value="${rm.title}"></div>
+    <div class="fg"><label>📝 Not</label><textarea id="erNote" placeholder="Not (isteğe bağlı)..." style="width:100%;min-height:60px;padding:10px;border:1px solid var(--b);border-radius:10px;font-size:0.92rem;resize:vertical;font-family:inherit;background:var(--bg);color:var(--t)">${rm.note||''}</textarea></div>
     <div class="row">
       <div class="fg"><label>📅 Tarih</label><input type="date" id="erDate" value="${rm.date||''}"></div>
       <div class="fg"><label>🕐 Saat</label><input type="time" id="erTime" value="${rm.time}"></div>
@@ -1950,6 +1953,8 @@ async function saveReminder(currentEditId) {
 
   const sound = document.getElementById('erSound').value;
   const repeat = document.getElementById('erRepeat').value;
+  const noteEl = document.getElementById('erNote');
+  const note = noteEl ? noteEl.value.trim() : '';
 
   // 1. Yerel hafızadaki hatırlatıcıyı güncelle
   const rems = getData('reminders');
@@ -1959,6 +1964,7 @@ async function saveReminder(currentEditId) {
   rems[idx] = { 
     ...rems[idx], 
     title, 
+    note,
     date, 
     time, 
     sound, 
@@ -2224,13 +2230,14 @@ function openKitaplarTab(tab, btn) {
 
 // İlmihal alt sekme yönetimi
 function openIlmihalTab(tab, btn) {
-  ['genel','namaz','oruc','zekat','hac','32farz','54farz'].forEach(t => {
+  ['genel','itikad','namaz','oruc','zekat','hac','32farz','54farz'].forEach(t => {
     const sec = document.getElementById('ilm-'+t);
     const b = document.getElementById('ilmtab-'+t);
     if(sec) sec.style.display = t === tab ? 'block' : 'none';
     if(b) b.classList.toggle('active', t === tab);
   });
   if(tab === 'genel') renderIlmihal();
+  if(tab === 'itikad') renderItikadBilgi();
   if(tab === 'namaz') { renderNamazBilgi(); renderKerahatBilgi(); }
   if(tab === 'oruc') renderOrucBilgi();
   if(tab === 'zekat') renderZekatBilgi();
@@ -8363,7 +8370,22 @@ const NAMAZ_BILGI = [
   { baslik:"🕌 Namaz Nasıl Kılınır? (Adım Adım)", icerik:"2 REKATLIK NAMAZ:\n\n1. NİYET: 'Niyet ettim Allah rızası için ... namazını kılmaya.'\n\n2. İFTİTAH TEKBİRİ: Eller kulak hizasına kaldırılır, 'Allâhü Ekber' denir, eller bağlanır.\n\n3. KIYAM: Sübhaneke → Eûzü Besmele → Fatiha → bir sure (örn. İhlas) okunur.\n\n4. RÜKÛ: 'Allâhü Ekber' denip eğilinir, 3 kez 'Sübhâne rabbiyel azîm' denir.\n\n5. DOĞRULMA: 'Semiallâhü limen hamideh', 'Rabbenâ lekel hamd' denir.\n\n6. SECDE: 'Allâhü Ekber' denip secdeye varılır, 3 kez 'Sübhâne rabbiyel a'lâ' denir.\n\n7. İki secde arası oturulur, tekrar secde yapılır. → 1 rekat tamam.\n\n8. SON OTURUŞ: Ettehiyyâtü, Allâhümme salli-barik, Rabbenâ duaları okunur.\n\n9. SELAM: Sağa ve sola 'Esselâmü aleyküm ve rahmetullâh' denir." },
   { baslik:"📿 Namaz Tesbihatı", icerik:"Farz namazlardan sonra yapılır:\n\n1. 'Allâhümme entes-selâmü ve minkes-selâm...' denir.\n2. Ayetel Kürsî okunur.\n3. 33 kez Sübhânallah\n4. 33 kez Elhamdülillah\n5. 33 kez Allâhü Ekber\n6. 'Lâ ilâhe illallâhü vahdehû lâ şerîke leh...' okunur.\n7. Eller açılıp dua edilir." },
   { baslik:"⏰ Namaz Vakitleri", icerik:"Sabah: Tan yerinin ağarmasından (imsak) güneş doğana kadar.\n\nÖğle: Güneş tam tepeden batıya kaydıktan sonra, ikindiye kadar.\n\nİkindi: Öğle vakti çıktıktan sonra, güneş batana kadar.\n\nAkşam: Güneş battıktan sonra, kızıllık kaybolana kadar.\n\nYatsı: Akşam vakti çıktıktan sonra, imsağa (sabaha) kadar." },
-];
+  { baslik:"💧 Abdest Nasıl Alınır?", icerik:"Abdest, namaz kılabilmek için yapılan temizliktir. Sırasıyla:\n\n1. Niyet edilir, 'Eûzü Besmele' çekilir.\n2. Eller bileklere kadar 3 kez yıkanır.\n3. Ağza 3 kez su verilir (mazmaza).\n4. Burna 3 kez su çekilir (istinşak).\n5. Yüz 3 kez yıkanır.\n6. Sağ kol dirsekle beraber 3 kez, sonra sol kol 3 kez yıkanır.\n7. Başın dörtte biri ıslak elle meshedilir (1 kez).\n8. Kulaklar ve boyun meshedilir.\n9. Sağ ayak topuklarla beraber 3 kez, sonra sol ayak 3 kez yıkanır." },
+  { baslik:"💧 Abdestin Farzları (4 Farz)", icerik:"Abdestin sahih olması için 4 farz vardır:\n\n1. Yüzü yıkamak\n2. Kolları dirseklerle beraber yıkamak\n3. Başın dörtte birini meshetmek\n4. Ayakları topuklarla beraber yıkamak\n\nBu dört farzdan biri eksik olursa abdest geçerli olmaz." },
+  { baslik:"🚫 Abdesti Bozan Şeyler", icerik:"- Tuvalet ihtiyacını gidermek (önden-arkadan çıkan şeyler)\n- Yellenmek\n- Ağız dolusu kusmak\n- Vücuttan kan, irin akması\n- Bayılmak, sarhoş olmak\n- Namazda sesli gülmek\n- Uyumak (yatarak/dayanarak)" },
+  { baslik:"🚿 Gusül (Boy Abdesti) Nasıl Alınır?", icerik:"Gusül, tüm vücudun yıkanmasıdır. Farzları 3'tür:\n\n1. Ağza su vermek (boğaza kadar)\n2. Burna su çekmek\n3. Bütün vücudu kuru yer kalmayacak şekilde yıkamak\n\nUygulama: Önce eller ve avret yeri yıkanır, abdest alınır, sonra baştan aşağı tüm vücut 3 kez yıkanır." },
+  { baslik:"📖 Sübhâneke (Okunuşu ve Anlamı)", icerik:"Sübhânekellâhümme ve bi-hamdik ve tebârekesmük ve teâlâ ceddük ve lâ ilâhe ğayruk.\n\nANLAMI: Allah'ım! Sen her türlü eksiklikten uzaksın. Seni hamdinle tesbih ederim. Senin adın mübarektir, şanın yücedir. Senden başka ilah yoktur." },
+  { baslik:"📖 Ettehiyyâtü (Okunuşu ve Anlamı)", icerik:"Ettehiyyâtü lillâhi vessalevâtü vettayyibât. Esselâmü aleyke eyyühen-nebiyyü ve rahmetullâhi ve berakâtüh. Esselâmü aleynâ ve alâ ibâdillâhis sâlihîn. Eşhedü en lâ ilâhe illallâh ve eşhedü enne Muhammeden abdühû ve resûlüh.\n\nANLAMI: Dil, beden ve mal ile yapılan bütün ibadetler Allah'a aittir. Ey Peygamber! Allah'ın selamı, rahmeti ve bereketi senin üzerine olsun. Selam bizim ve Allah'ın salih kullarının üzerine olsun. Şahitlik ederim ki Allah'tan başka ilah yoktur ve yine şahitlik ederim ki Muhammed O'nun kulu ve elçisidir." },
+  { baslik:"📖 Allâhümme Salli ve Bârik", icerik:"ALLÂHÜMME SALLİ: Allâhümme salli alâ Muhammedin ve alâ âli Muhammed, kemâ salleyte alâ İbrâhîme ve alâ âli İbrâhîm, inneke hamîdün mecîd.\n\nALLÂHÜMME BÂRİK: Allâhümme bârik alâ Muhammedin ve alâ âli Muhammed, kemâ bârekte alâ İbrâhîme ve alâ âli İbrâhîm, inneke hamîdün mecîd.\n\nANLAMI: Allah'ım! İbrahim'e ve ailesine rahmet/bereket ettiğin gibi Muhammed'e ve ailesine de rahmet/bereket et. Şüphesiz sen övülmeye layıksın, şanı yücesin." },
+  { baslik:"📖 Rabbenâ Duaları", icerik:"Rabbenâ âtinâ fid-dünyâ haseneten ve fil-âhireti haseneten ve kınâ azâben-nâr.\nANLAMI: Rabbimiz! Bize dünyada da iyilik ver, ahirette de iyilik ver ve bizi ateş azabından koru.\n\nRabbenâğfir lî ve li-vâlideyye ve lil-mü'minîne yevme yekûmül hisâb.\nANLAMI: Rabbimiz! Hesabın görüleceği gün beni, anne-babamı ve müminleri bağışla." },
+  { baslik:"📕 Fâtiha Suresi", icerik:"Bismillâhirrahmânirrahîm.\nElhamdü lillâhi rabbil âlemîn. Errahmânir rahîm. Mâliki yevmiddîn. İyyâke na'budü ve iyyâke nesteîn. İhdinâs sırâtel müstakîm. Sırâtellezîne en'amte aleyhim ğayril mağdûbi aleyhim ve leddâllîn. (Âmin)\n\nANLAMI: Hamd, âlemlerin Rabbi olan Allah'a mahsustur. O Rahman ve Rahim'dir. Din gününün sahibidir. Yalnız sana ibadet eder, yalnız senden yardım dileriz. Bizi doğru yola ilet." },
+  { baslik:"📕 İhlâs Suresi", icerik:"Bismillâhirrahmânirrahîm.\nKul hüvallâhü ehad. Allâhüssamed. Lem yelid ve lem yûled. Ve lem yekün lehû küfüven ehad.\n\nANLAMI: De ki: O Allah birdir. Allah Samed'dir (hiçbir şeye muhtaç değildir, her şey O'na muhtaçtır). O doğurmamış ve doğmamıştır. Hiçbir şey O'na denk değildir." },
+  { baslik:"📕 Kevser Suresi", icerik:"Bismillâhirrahmânirrahîm.\nİnnâ a'taynâkel kevser. Fe salli li-rabbike venhar. İnne şânieke hüvel ebter.\n\nANLAMI: Şüphesiz biz sana Kevser'i (bol nimet) verdik. Öyleyse Rabbin için namaz kıl ve kurban kes. Asıl soyu kesik olan, sana kin besleyendir." },
+  { baslik:"📕 Felak ve Nâs Sureleri", icerik:"FELAK: Kul eûzü bi-rabbil felak. Min şerri mâ halak. Ve min şerri ğâsikın izâ vekab. Ve min şerrin neffâsâti fil ukad. Ve min şerri hâsidin izâ hased.\n\nNÂS: Kul eûzü bi-rabbin nâs. Melikin nâs. İlâhin nâs. Min şerril vesvâsil hannâs. Ellezî yüvesvisü fî sudûrin nâs. Minel cinneti ven nâs.\n\nBu iki sure kötülüklerden Allah'a sığınmak için okunur." },
+  { baslik:"📢 Ezan ve Kamet", icerik:"EZAN: Namaz vaktinin girdiğini bildiren çağrıdır.\nAllâhü ekber (4 kez)\nEşhedü en lâ ilâhe illallâh (2 kez)\nEşhedü enne Muhammeden resûlullâh (2 kez)\nHayye ales-salâh (2 kez)\nHayye alel-felâh (2 kez)\nAllâhü ekber (2 kez)\nLâ ilâhe illallâh (1 kez)\n\nKAMET: Namaza başlarken okunur, ezana benzer ama 'Kad kâmetis-salâh (Namaz başladı)' eklenir ve daha hızlı okunur." },
+  { baslik:"🤲 Namazın Vacipleri", icerik:"Namazda yapılması gereken (farz kadar kesin olmayan ama terk edilmemesi gereken) işler:\n\n- Fâtiha okumak\n- Fâtiha'dan sonra bir sure eklemek\n- İlk oturuşta Ettehiyyatü okumak\n- İki secdeyi peş peşe yapmak\n- Vacip terk edilirse sehiv secdesi gerekir." },
+  { baslik:"🔄 Sehiv Secdesi (Yanılma Secdesi)", icerik:"Namazda yanlışlıkla bir vacip terk edilir veya geciktirilirse, namazın sonunda yapılan iki secdedir.\n\nUygulama: Son oturuşta Ettehiyyatü okunduktan sonra sağa selam verilir, iki secde yapılır, tekrar Ettehiyyatü ve dualar okunup selam verilir." },
+]
 const ORUC_BILGI = [
   { baslik:"🌙 Oruç Nedir?", icerik:"Oruç, İslam'ın beş şartından biridir. Ramazan ayında, imsak vaktinden iftar vaktine (akşam ezanına) kadar yemek, içmek ve orucu bozan davranışlardan uzak durmaktır.\n\nRamazan orucu, ergenlik çağına ulaşmış, akıllı her Müslümana farzdır." },
   { baslik:"✅ Orucun Farzları", icerik:"1. Niyet etmek: 'Yarın Ramazan orucu tutmaya niyet ettim.'\n\n2. İmsak vaktinden iftar vaktine kadar orucu bozan şeylerden uzak durmak." },
@@ -8371,14 +8393,22 @@ const ORUC_BILGI = [
   { baslik:"⚠️ Orucu Bozan ve Kefaret Gerektiren Durumlar", icerik:"Ramazan'da bilerek ve kasten oruç bozulursa (örneğin bilerek yiyip içmek), hem kaza hem de kefaret gerekir.\n\nKefaret: Aralıksız 61 gün oruç tutmaktır. Buna güç yetmezse 60 fakir doyurulur." },
   { baslik:"🆗 Orucu Bozmayan Şeyler", icerik:"- Unutarak yemek-içmek (oruç bozulmaz, devam edilir)\n- İğne yaptırmak (besleyici olmayan)\n- Kan aldırmak\n- Misvak veya diş fırçalamak (yutmadan)\n- Ağız çalkalamak\n- Gözüne damla damlatmak" },
   { baslik:"💝 Orucun Faydaları ve Hikmeti", icerik:"Oruç; sabrı, iradeyi ve nefse hakimiyeti öğretir. Aç kalan, fakirlerin halini anlar ve şükretmeyi öğrenir.\n\nBedenen de dinlenme ve arınma sağlar. Oruç, kalkan gibi insanı kötülüklerden korur." },
-];
+  { baslik:"📅 Oruç Çeşitleri", icerik:"1. FARZ ORUÇ: Ramazan orucu ve kazası.\n\n2. VACİP ORUÇ: Adak (nezir) orucu, bozulan nafile orucun kazası.\n\n3. SÜNNET ORUÇ: Aşure günü, Şevval'de 6 gün, Arefe günü orucu.\n\n4. MEKRUH ORUÇ: Sadece bayram günlerinde veya sürekli (hiç ara vermeden) oruç tutmak.\n\n5. HARAM ORUÇ: Ramazan ve Kurban bayramı günlerinde oruç tutmak haramdır." },
+  { baslik:"🤲 Oruç Tutamayanlar (Fidye/Kaza)", icerik:"- Hasta ve yolcular: İyileşince/dönünce kaza ederler.\n- Hamile ve emziren anneler: Sonra kaza ederler.\n- Yaşlı ve iyileşme umudu olmayan hastalar: Oruç yerine FİDYE verirler (her gün için bir fakirin bir günlük yemek bedeli).\n- Hayızlı (âdetli) ve loğusa kadınlar: O günlerde oruç tutmazlar, sonra kaza ederler." },
+  { baslik:"🌙 Sahur ve İftar", icerik:"SAHUR: İmsaktan önce yenen yemektir. Sünnettir ve bereketlidir. Peygamberimiz 'Sahur yapın, çünkü sahurda bereket vardır' buyurmuştur.\n\nİFTAR: Akşam ezanıyla orucu açmaktır. Hurma veya su ile açmak sünnettir.\n\nİFTAR DUASI: 'Allâhümme leke sumtü ve bike âmentü ve aleyke tevekkeltü ve alâ rızkıke eftartü.' (Allah'ım! Senin için oruç tuttum, sana inandım, sana güvendim, senin rızkınla orucumu açtım.)" },
+  { baslik:"🌟 Ramazan ve Kadir Gecesi", icerik:"Ramazan, Kur'an'ın indirilmeye başladığı mübarek aydır. Oruç bu ayda farz kılınmıştır.\n\nKADİR GECESİ: Ramazan'ın son on gününde (özellikle 27. gece) aranan, bin aydan hayırlı olan gecedir. Bu gecede ibadet, dua ve Kur'an okumak çok faziletlidir.\n\nTERAVİH: Ramazan'a özel, yatsıdan sonra kılınan 20 rekatlık sünnet namazdır." },
+]
 const ZEKAT_BILGI = [
   { baslik:"💰 Zekat Nedir?", icerik:"Zekat, İslam'ın beş şartından biridir. Belirli bir zenginliğe (nisaba) ulaşan Müslümanın, malının belli bir bölümünü ihtiyaç sahiplerine vermesidir.\n\nZekat, malı temizler ve bereketlendirir. Zengin ile fakir arasında köprü kurar, toplumsal dayanışmayı sağlar." },
   { baslik:"📊 Nisab Miktarı", icerik:"Nisab, zekatın farz olması için gereken asgari zenginlik ölçüsüdür:\n\n- Altın: 80.18 gram\n- Gümüş: 561 gram\n- Para ve ticaret malı: Bu altın/gümüş değerine ulaşırsa.\n\nBu mala bir yıl (kameri) sahip olunması gerekir." },
   { baslik:"🔢 Zekat Oranı", icerik:"Zekat oranı, malın kırkta biridir, yani %2.5'tir.\n\nÖrnek: 100.000 TL nisabı aşan birikiminiz varsa ve üzerinden bir yıl geçtiyse, 2.500 TL zekat verilir." },
   { baslik:"🤲 Zekat Kimlere Verilir?", icerik:"Kur'an'da belirtilen 8 sınıf:\n\n1. Fakirler\n2. Miskinler (yoksullar)\n3. Zekat memurları\n4. Kalbi İslam'a ısındırılacaklar\n5. Köleler (azat için)\n6. Borçlular\n7. Allah yolunda olanlar\n8. Yolda kalmışlar" },
   { baslik:"🚫 Zekat Kimlere Verilmez?", icerik:"- Anne, baba, dede, nine (usul)\n- Çocuk, torun (füru)\n- Eşe\n- Zengine\n- Gayrimüslime (zekat olarak)\n\nKardeşe, amcaya, dayıya, teyzeye, halaya verilebilir." },
-];
+  { baslik:"🌾 Zekata Tabi Mallar", icerik:"Zekat şu mallardan verilir:\n\n1. Altın, gümüş ve para (nakit birikim)\n2. Ticaret malları\n3. Toprak ürünleri (öşür)\n4. Hayvanlar (koyun, keçi, sığır, deve - belli sayıya ulaşırsa)\n5. Madenler ve defineler\n\nEv, araba, ev eşyası gibi kullanım malları zekata tabi değildir." },
+  { baslik:"🌾 Öşür (Toprak Ürünleri Zekatı)", icerik:"Öşür, topraktan elde edilen ürünlerin zekatıdır.\n\n- Yağmur/dere suyu ile sulanan araziden: 1/10 (onda bir)\n- Emek ve masrafla (motor, kova) sulanan araziden: 1/20 (yirmide bir)\n\nÖşür, hasat zamanı verilir; bir yıl beklemeye gerek yoktur." },
+  { baslik:"🍞 Fitre (Fıtır Sadakası)", icerik:"Fitre, Ramazan bayramı öncesi, nisaba sahip her Müslümanın kendisi ve bakmakla yükümlü olduğu kişiler için verdiği sadakadır.\n\n- Ramazan bayramı sabahına kadar verilmelidir.\n- Bir kişinin bir günlük yiyecek bedeli kadardır.\n- Bayram namazından önce verilmesi daha faziletlidir.\n\nFitre, orucun eksiklerini tamamlar ve fakirlerin bayramı rahat geçirmesini sağlar." },
+  { baslik:"💝 Zekatın Hikmeti ve Faydaları", icerik:"Zekat malı temizler, bereketlendirir ve cimrilikten arındırır.\n\nToplumda zengin-fakir uçurumunu kapatır, dayanışmayı artırır, kıskançlığı önler.\n\nKur'an'da namaz ile zekat çoğu zaman birlikte zikredilir; bu, ikisinin de İslam'da ne kadar önemli olduğunu gösterir." },
+]
 const HAC_BILGI = [
   { baslik:"🕋 Hac Nedir?", icerik:"Hac, İslam'ın beş şartından biridir. Gücü yeten (maddi ve bedeni) her Müslümanın ömründe bir kez Mekke'deki Kâbe'yi ziyaret edip belirli ibadetleri yapmasıdır.\n\nHac, Zilhicce ayında belirli günlerde yapılır. Müslümanların birlik ve kardeşliğinin en büyük göstergesidir." },
   { baslik:"✅ Haccın Farzları", icerik:"1. İHRAM: Hacca niyet edip ihram denen dikişsiz elbiseyi giymek ve ihram yasaklarına uymak.\n\n2. ARAFAT VAKFESİ: Zilhicce'nin 9. günü Arafat'ta belirli süre bulunmak. (Haccın en önemli rüknü)\n\n3. ZİYARET TAVAFI: Kâbe'nin etrafında 7 kez dönmek." },
@@ -8386,7 +8416,25 @@ const HAC_BILGI = [
   { baslik:"👕 İhram ve Yasakları", icerik:"İhram, hacca/umreye niyetle girilen özel bir ibadet halidir. Erkekler dikişsiz iki parça beyaz örtü giyer.\n\nİhram yasakları:\n- Saç-sakal tıraşı, tırnak kesmek\n- Koku sürünmek\n- Dikişli elbise giymek (erkekler)\n- Avlanmak\n- Tartışmak, kavga etmek" },
   { baslik:"🚶 Hac Nasıl Yapılır? (Özet)", icerik:"1. Mîkat denen yerde ihrama girilir.\n2. Mekke'ye varılır, Kâbe tavaf edilir.\n3. Safa-Merve arası sa'y yapılır.\n4. Zilhicce 8: Mina'ya gidilir.\n5. Zilhicce 9: Arafat'ta vakfe yapılır (haccın özü).\n6. Akşam Müzdelife'ye geçilir.\n7. Zilhicce 10: Şeytan taşlanır, kurban kesilir, tıraş olunur.\n8. Ziyaret tavafı yapılır.\n9. Bayram günleri şeytan taşlamaya devam edilir.\n10. Veda tavafı ile hac tamamlanır." },
   { baslik:"💝 Haccın Hikmeti", icerik:"Hac, tüm Müslümanların ırk, dil, zenginlik farkı gözetmeksizin aynı kıyafetle (ihram) bir araya gelmesidir. Eşitliği, kardeşliği ve Allah'a teslimiyeti öğretir.\n\nHac, insanın günahlarından arınması ve yeniden doğması gibidir." },
+  { baslik:"🕋 Kâbe, Tavaf ve Sa'y", icerik:"KÂBE: Mekke'de, Müslümanların kıblesi olan kutsal yapıdır. Hz. İbrahim ve oğlu Hz. İsmail tarafından inşa edilmiştir.\n\nTAVAF: Kâbe'nin etrafında, Hacerü'l-Esved'den başlayarak 7 kez dönmektir.\n\nSA'Y: Safa ve Merve tepeleri arasında 7 kez gidip gelmektir. Hz. Hacer'in oğlu İsmail'e su ararken koşmasını temsil eder." },
+  { baslik:"🌙 Umre Nedir?", icerik:"Umre, hac mevsimi dışında da yapılabilen, Kâbe'yi ziyaret ibadetidir. 'Küçük hac' da denir.\n\nUmrenin yapılışı:\n1. Mîkatta ihrama girilir.\n2. Kâbe tavaf edilir.\n3. Safa-Merve arası sa'y yapılır.\n4. Saç tıraşı/kısaltma ile ihramdan çıkılır.\n\nUmre sünnettir, hac gibi belirli bir zamanı yoktur." },
+  { baslik:"🐑 Kurban (Hac ve Bayram)", icerik:"Kurban, Allah'a yakınlaşmak için belirli hayvanların bayramda kesilmesidir.\n\n- Kurban Bayramı'nın ilk 3 günü kesilir.\n- Koyun, keçi, sığır, deve kurban edilebilir.\n- Nisaba sahip her Müslümana vaciptir.\n- Eti üçe bölünür: bir kısmı eve, bir kısmı akraba-komşuya, bir kısmı fakirlere.\n\nHz. İbrahim'in oğlu İsmail'i Allah için kurban etmeye razı olmasını anar." },
+  { baslik:"📍 Hac Çeşitleri", icerik:"1. İFRAD HACCI: Sadece hac yapmak (umresiz).\n\n2. TEMETTÜ HACCI: Önce umre yapıp ihramdan çıkmak, sonra hac için tekrar ihrama girmek. (En çok tercih edilen)\n\n3. KIRAN HACCI: Hac ve umreye birlikte, tek ihramla niyet etmek.\n\nTemettü ve Kıran haccı yapanlar şükür kurbanı keserler." },
+]
+
+const ITIKAD_BILGI = [
+  { baslik:"☝️ İman Nedir?", icerik:"İman, Hz. Muhammed'in Allah tarafından getirdiği kesin olarak bilinen hükümleri kalp ile tasdik (onaylama) ve dil ile ikrar (söyleme) etmektir.\n\nİmanın özü kalpteki tasdiktir. Bir kişi 'Lâ ilâhe illallâh Muhammedün resûlullâh' (Allah'tan başka ilah yoktur, Muhammed Allah'ın elçisidir) diyerek imana girer." },
+  { baslik:"📿 Amentü (İmanın 6 Şartı)", icerik:"Bir Müslüman şunlara inanır (Amentü):\n\n1. Allah'a\n2. Meleklerine\n3. Kitaplarına\n4. Peygamberlerine\n5. Ahiret gününe\n6. Kadere; hayır ve şerrin Allah'tan olduğuna\n\nAMENTÜ: 'Âmentü billâhi ve melâiketihî ve kütübihî ve rusülihî vel yevmil âhiri ve bil kaderi hayrihî ve şerrihî minallâhi teâlâ vel ba'sü ba'del mevti hakkun. Eşhedü en lâ ilâhe illallâh ve eşhedü enne Muhammeden abdühû ve resûlüh.'" },
+  { baslik:"1️⃣ Allah'a İman", icerik:"Allah birdir (tektir), eşi ve benzeri yoktur. Doğmamış ve doğurmamıştır. Her şeyi yaratan, yaşatan ve yöneten O'dur.\n\nAllah'ın sıfatları vardır: Var olması (Vücud), bir olması (Vahdaniyet), her şeyi bilmesi (İlim), her şeye gücünün yetmesi (Kudret), işitmesi (Sem'), görmesi (Basar)...\n\nAllah'ın 99 güzel ismi (Esmâ-i Hüsnâ) vardır." },
+  { baslik:"2️⃣ Meleklere İman", icerik:"Melekler, Allah'ın nurdan yarattığı, günah işlemeyen, sürekli O'na ibadet eden varlıklardır. Gözle görülmezler.\n\nDört büyük melek:\n- CEBRAİL: Peygamberlere vahiy getirir.\n- MİKAİL: Tabiat olaylarını (rızık, yağmur) yönetir.\n- İSRAFİL: Kıyamette Sûr'a üfleyecektir.\n- AZRAİL: Canları alır (ölüm meleği).\n\nAyrıca Kiramen Kâtibîn (amelleri yazan), Münker-Nekir (kabirde soran) melekler de vardır." },
+  { baslik:"3️⃣ Kitaplara İman", icerik:"Allah, peygamberleri aracılığıyla insanlara kitaplar göndermiştir.\n\n4 BÜYÜK KİTAP:\n- TEVRAT: Hz. Musa'ya\n- ZEBUR: Hz. Davud'a\n- İNCİL: Hz. İsa'ya\n- KUR'AN-I KERİM: Hz. Muhammed'e\n\nKur'an, son ilahi kitaptır, hiç değişmeden günümüze ulaşmıştır ve kıyamete kadar geçerlidir. Ayrıca bazı peygamberlere 'sahife'ler de verilmiştir." },
+  { baslik:"4️⃣ Peygamberlere İman", icerik:"Peygamberler, Allah'ın insanlara doğru yolu göstermek için seçtiği elçilerdir. İlk peygamber Hz. Âdem, son peygamber Hz. Muhammed'dir.\n\nPEYGAMBERLERİN SIFATLARI:\n- Sıdk (doğruluk)\n- Emanet (güvenilirlik)\n- Tebliğ (Allah'ın emirlerini iletmek)\n- Fetanet (akıllılık)\n- İsmet (günahsızlık)\n\nKur'an'da 25 peygamberin adı geçer. Hz. Muhammed son peygamberdir, ondan sonra peygamber gelmeyecektir." },
+  { baslik:"5️⃣ Ahirete İman", icerik:"Ahiret, ölümden sonra başlayacak olan sonsuz hayattır.\n\nKıyamet kopacak, herkes yeniden diriltilecek (haşir), dünyada yaptıklarından hesaba çekilecektir (mizan).\n\nİyiler CENNET ile, kötüler CEHENNEM ile karşılık görecektir.\n\nBu inanç, insanı iyiliğe yöneltir, kötülükten alıkoyar ve dünyada adaletin tam sağlanamadığı durumlarda gerçek adaletin ahirette olacağını öğretir." },
+  { baslik:"6️⃣ Kadere İman", icerik:"Kader, Allah'ın olmuş ve olacak her şeyi ezelî ilmiyle bilmesi ve takdir etmesidir.\n\nHayır ve şer (iyilik ve kötülük) Allah'ın bilgisi ve izniyle olur. Ancak Allah insana irade ve seçme hürriyeti vermiştir; insan kendi tercihlerinden sorumludur.\n\nKadere iman, başa gelenlere sabretmeyi, nimetlere şükretmeyi ve tevekkül (Allah'a güvenmeyi) öğretir. Tembelliğe veya sorumsuzluğa bahane olamaz." },
+  { baslik:"🌟 İslam'ın Şartları (5 Şart)", icerik:"1. KELİME-İ ŞEHADET: 'Eşhedü en lâ ilâhe illallâh ve eşhedü enne Muhammeden abdühû ve resûlüh' demek.\n\n2. NAMAZ kılmak (günde 5 vakit).\n\n3. ORUÇ tutmak (Ramazan ayında).\n\n4. ZEKAT vermek (zengin olanlar için).\n\n5. HAC yapmak (gücü yetenler için, ömürde bir kez).\n\nBunlar İslam binasının beş temel direğidir." },
+  { baslik:"💚 Güzel Ahlak ve İman İlişkisi", icerik:"İman sadece inanmak değil, güzel ahlakla da yaşanır. Peygamberimiz 'Müminlerin iman bakımından en olgunu, ahlakı en güzel olanıdır' buyurmuştur.\n\nDoğruluk, dürüstlük, merhamet, adalet, sabır, cömertlik, alçakgönüllülük müminin özellikleridir.\n\nYalan, hile, kibir, haset, gıybet ise imanı zayıflatan kötü huylardır. Gerçek iman, kişiyi hem Allah'a hem de insanlara karşı güzel davranmaya yöneltir." },
 ];
+
 
 // Ortak ilmihal bilgi render motoru (sesli + check)
 function ilmihalBilgiRender(liste, listEl, anahtar) {
@@ -8446,70 +8494,22 @@ function ilmBilgiSesli(anahtar,i){
   } else notify('Cihazınız sesli okumayı desteklemiyor','info');
 }
 function renderNamazBilgi(){ ilmihalBilgiRender(NAMAZ_BILGI,'namazBilgiList','namaz'); }
+function renderItikadBilgi(){ ilmihalBilgiRender(ITIKAD_BILGI,'itikadBilgiList','itikad'); }
 function renderOrucBilgi(){ ilmihalBilgiRender(ORUC_BILGI,'orucBilgiList','oruc'); }
 function renderZekatBilgi(){ ilmihalBilgiRender(ZEKAT_BILGI,'zekatBilgiList','zekat'); }
 function renderHacBilgi(){ ilmihalBilgiRender(HAC_BILGI,'hacBilgiList','hac'); }
 
 
+const KERAHAT_BILGI = [
+  { baslik:"⛔ Kerahat Vakti Nedir?", icerik:"Kerahat vakti, güneşin hareketlerine bağlı olarak belirlenen ve namaz kılmanın mekruh (hoş karşılanmadığı) zaman dilimleridir.\n\nBu vakitler, güneşe tapan kavimlerin ibadet saatleriyle çakışmaması ve ibadetin yalnızca Allah'a has kılınması amacıyla belirlenmiştir." },
+  { baslik:"🌅 Güneş Doğarken (Şurûk)", icerik:"Güneşin doğmaya başlamasından, ufukta bir mızrak boyu (~5 derece) yükselmesine kadar olan vakittir.\n\nGünümüzde bu süre güneşin doğuşundan sonraki ilk 45-50 dakikadır. Bu vakitte hiçbir namaz kılınmaz." },
+  { baslik:"🌞 Güneş Tam Tepedeyken (İstivâ)", icerik:"Güneşin en tepede olduğu zeval vaktidir.\n\nÖğle ezanına yaklaşık 10-15 dakika kala başlar, öğle vaktinin girmesiyle (ezanla) biter. Bu vakitte hiçbir namaz kılınmaz." },
+  { baslik:"🌇 Güneş Batarken (İsfirar)", icerik:"Güneşin sararıp gözü kamaştırmaz hale geldiği andan batışına kadar olan vakittir.\n\nAkşam ezanına yaklaşık 45-50 dakika kala başlar.\n\n⚠️ Önemli istisna: O günün ikindi farzını vaktinde kılamadıysanız ve akşam kerahati girdiyse, namazı kazaya bırakmaktansa mekruh da olsa bu vakitte kılmanız gerekir. Ancak bu vakitte sadece o günün ikindi farzı kılınabilir." },
+  { baslik:"🌙 Nafile Namazın Mekruh Olduğu Vakitler", icerik:"Şu vakitlerde kaza, cenaze namazı veya tilavet secdesi yapılabilir; ama isteğe bağlı (nafile/sünnet) namaz kılınmaz:\n\n1. Sabah namazının vakti girdikten sonra (sabah sünneti hariç) ve sabah farzından sonra güneş doğana kadar.\n\n2. İkindi namazının farzı kılındıktan sonra akşam ezanına kadar." },
+  { baslik:"📋 Kerahat Vakitleri Özeti", icerik:"• Gündoğumu (güneş doğarken): Hiçbir namaz kılınmaz.\n• Öğle/İstiva (ezana 10-15 dk kala): Hiçbir namaz kılınmaz.\n• Günbatımı (akşama 45-50 dk kala): Sadece o günün ikindi farzı kılınabilir.\n• Sabah nafile yasağı (imsak/sabah farzı sonrası): Sabah sünneti ve kazalar kılınabilir.\n• İkindi nafile yasağı (ikindi farzı sonrası): Kaza namazları kılınabilir." },
+];
 function renderKerahatBilgi(){
-  const el = document.getElementById('kerahatBilgiList');
-  if(!el) return;
-  el.innerHTML = `
-  <div style="line-height:1.8;font-size:0.9rem;color:var(--t)">
-    <div style="background:rgba(76,175,80,0.08);padding:10px;border-radius:8px;margin-bottom:14px;font-size:0.85rem">
-      Kerahat vakti, güneşin hareketlerine bağlı olarak belirlenen ve namaz kılmanın <b>mekruh (hoş karşılanmadığı)</b> zaman dilimleridir. Bu vakitler, güneşe tapan kavimlerin ibadet saatleriyle çakışmaması ve ibadetin yalnızca Allah'a has kılınması amacıyla belirlenmiştir.
-    </div>
-
-    <div style="font-weight:700;color:#E53935;font-size:1rem;margin-bottom:8px">1. Asla Namaz Kılınmayan 3 Mutlak Kerahat Vakti</div>
-    <div style="font-size:0.85rem;margin-bottom:10px;color:var(--tm)">Bu üç vakitte hiçbir namaz kılınmaz (cenaze namazı, kaza namazları ve tilavet secdesi dahil). Bu vakitlerde bir namaza başlanmışsa namaz bozulur, sonra iade edilmesi gerekir.</div>
-
-    <div style="border-left:3px solid #E53935;padding:8px 12px;margin-bottom:8px;background:rgba(229,57,53,0.05);border-radius:0 8px 8px 0">
-      <b>🌅 Güneş Doğarken (Şurûk)</b><br>
-      Güneşin doğmaya başlamasından, ufukta bir mızrak boyu (~5 derece) yükselmesine kadar. Günümüzde bu süre <b>güneşin doğuşundan sonraki ilk 45-50 dakikadır.</b>
-    </div>
-    <div style="border-left:3px solid #E53935;padding:8px 12px;margin-bottom:8px;background:rgba(229,57,53,0.05);border-radius:0 8px 8px 0">
-      <b>🌞 Güneş Tam Tepedeyken (İstivâ)</b><br>
-      Güneşin en tepede olduğu zeval vaktidir. <b>Öğle ezanına ~10-15 dk kala</b> başlar, öğle vaktinin girmesiyle (ezanla) biter.
-    </div>
-    <div style="border-left:3px solid #E53935;padding:8px 12px;margin-bottom:8px;background:rgba(229,57,53,0.05);border-radius:0 8px 8px 0">
-      <b>🌇 Güneş Batarken (İsfirar)</b><br>
-      Güneşin sararıp gözü kamaştırmaz hale geldiği andan batışına kadar. <b>Akşam ezanına ~45-50 dk kala</b> başlar.
-    </div>
-
-    <div style="background:rgba(255,193,7,0.12);border-left:3px solid #FFC107;padding:10px;border-radius:6px;margin:12px 0;font-size:0.85rem">
-      <b>⚠️ Çok Önemli İstisna:</b> O günün ikindi farzını vaktinde kılamadıysanız ve akşam kerahati girdiyse, <b>namazı kazaya bırakmaktansa mekruh da olsa bu vakitte kılmanız gerekir.</b> Ancak bu vakitte sadece o günün ikindi farzı kılınabilir; kaza veya nafile kılınamaz.
-    </div>
-
-    <div style="font-weight:700;color:var(--p);font-size:1rem;margin:14px 0 8px">2. Sadece Nafile Namaz Kılmanın Mekruh Olduğu Vakitler</div>
-    <div style="font-size:0.85rem;margin-bottom:10px;color:var(--tm)">Bu vakitlerde kaza namazı, cenaze namazı veya tilavet secdesi yapılabilir; ancak isteğe bağlı sünnet/nafile namazlar kılınmaz.</div>
-
-    <div style="border-left:3px solid var(--p);padding:8px 12px;margin-bottom:8px;background:rgba(27,94,32,0.05);border-radius:0 8px 8px 0">
-      <b>Sabah Namazı Vakti Girdikten Sonra</b><br>
-      İmsaktan sonra, sabah namazının kendi sünneti hariç nafile kılınmaz. Sabah farzından sonra da güneş doğana kadar nafile yasaktır.
-    </div>
-    <div style="border-left:3px solid var(--p);padding:8px 12px;margin-bottom:8px;background:rgba(27,94,32,0.05);border-radius:0 8px 8px 0">
-      <b>İkindi Namazının Farzı Kılındıktan Sonra</b><br>
-      İkindi farzını kıldıktan sonra akşam ezanına kadar nafile namaz kılınması mekruhtur.
-    </div>
-
-    <div style="font-weight:700;color:var(--p);font-size:0.95rem;margin:14px 0 8px">📋 Özet</div>
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:0.78rem">
-      <thead><tr style="background:var(--bg)">
-        <th style="padding:6px;text-align:left;border:1px solid var(--b)">Kerahat Vakti</th>
-        <th style="padding:6px;text-align:left;border:1px solid var(--b)">Başlangıç</th>
-        <th style="padding:6px;text-align:left;border:1px solid var(--b)">Kılınabilen</th>
-      </tr></thead>
-      <tbody>
-        <tr><td style="padding:6px;border:1px solid var(--b)">Gündoğumu</td><td style="padding:6px;border:1px solid var(--b)">Güneş doğarken</td><td style="padding:6px;border:1px solid var(--b)">Hiçbiri</td></tr>
-        <tr><td style="padding:6px;border:1px solid var(--b)">Öğle (İstiva)</td><td style="padding:6px;border:1px solid var(--b)">Ezana 10-15 dk kala</td><td style="padding:6px;border:1px solid var(--b)">Hiçbiri</td></tr>
-        <tr><td style="padding:6px;border:1px solid var(--b)">Günbatımı</td><td style="padding:6px;border:1px solid var(--b)">Akşama 45-50 dk kala</td><td style="padding:6px;border:1px solid var(--b)">Sadece o günün ikindi farzı</td></tr>
-        <tr><td style="padding:6px;border:1px solid var(--b)">Sabah nafile yasağı</td><td style="padding:6px;border:1px solid var(--b)">İmsak / sabah farzı sonrası</td><td style="padding:6px;border:1px solid var(--b)">Sabah sünneti / kazalar</td></tr>
-        <tr><td style="padding:6px;border:1px solid var(--b)">İkindi nafile yasağı</td><td style="padding:6px;border:1px solid var(--b)">İkindi farzı sonrası</td><td style="padding:6px;border:1px solid var(--b)">Kaza namazları</td></tr>
-      </tbody>
-    </table>
-    </div>
-  </div>`;
+  ilmihalBilgiRender(KERAHAT_BILGI, 'kerahatBilgiList', 'kerahat');
 }
 
 // ==================== İMAM NEVEVİ 40 HADİS ====================
