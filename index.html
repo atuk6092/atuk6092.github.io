@@ -547,6 +547,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     • Güneş (işrak): <b>20 dk önce</b><br>
     📱 Telefon ve masaüstünde, uygulama kapalı olsa bile çalışır.
   </div>
+  <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--b)">
+    <label style="font-size:0.82rem;font-weight:600;color:var(--p)">🔊 Vakit Girince Çalacak Ses (uygulama açıkken)</label>
+    <select id="namazSesSelect" onchange="namazSesKaydet()" style="width:100%;padding:9px;border:1px solid var(--b);border-radius:8px;margin-top:6px;background:var(--bg);color:var(--t)">
+      <option value="azan">🕌 Ezan Tonu</option>
+      <option value="bell">🔔 Zil</option>
+      <option value="alarm">⏰ Alarm</option>
+      <option value="ozel_namaz">📂 Kendi Ezanım/Sesim</option>
+    </select>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button type="button" onclick="sesDosyaSec('ozel_namaz',()=>{document.getElementById('namazSesSelect').value='ozel_namaz';namazSesKaydet();})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:9px;border-radius:8px;font-weight:600;font-size:0.82rem;cursor:pointer">📂 Ses Yükle</button>
+      <button type="button" onclick="Sound.play(document.getElementById('namazSesSelect').value)" style="flex:1;background:#1B5E20;color:#fff;border:none;padding:9px;border-radius:8px;font-weight:600;font-size:0.82rem;cursor:pointer">▶️ Dinle</button>
+      <button type="button" onclick="Sound.durdurCustom('ozel_namaz')" style="flex:1;background:#757575;color:#fff;border:none;padding:9px;border-radius:8px;font-weight:600;font-size:0.82rem;cursor:pointer">⏹️ Durdur</button>
+    </div>
+    <div style="font-size:0.72rem;color:var(--tm);margin-top:6px;line-height:1.4">📂 Kendi ezan/ses dosyanı yükleyebilirsin (max 5MB). Dosya bu cihazda saklanır. Uygulama açık/arka planda yüklüyken tam çalar.</div>
+  </div>
 </div>
 </div>
 <div class="prayer-grid">
@@ -629,7 +644,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="fg"><label>🕐 Saat</label><input type="time" id="remTime"></div>
 </div>
 <div class="row">
-<div class="fg"><label>🔊 Ses</label><select id="remSound"><option value="bell">🔔 Zil</option><option value="alarm">⏰ Alarm</option><option value="azan">🕌 Ezan</option></select></div>
+<div class="fg"><label>🔊 Ses</label><select id="remSound" onchange="remSesDegisti()"><option value="bell">🔔 Zil</option><option value="alarm">⏰ Alarm</option><option value="azan">🕌 Ezan</option><option value="ozel_remNotif">📂 Kendi Sesim</option></select>
+  <div style="display:flex;gap:6px;margin-top:6px">
+    <button type="button" onclick="sesDosyaSec('ozel_remNotif',()=>{document.getElementById('remSound').value='ozel_remNotif';})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">📂 Ses Yükle</button>
+    <button type="button" onclick="Sound.play(document.getElementById('remSound').value)" style="flex:1;background:#1B5E20;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">▶️ Dinle</button>
+  </div>
+</div>
 <div class="fg"><label>🔄 Tekrar</label><select id="remRepeat"><option value="once">Bir Kez</option><option value="daily">Her Gün</option><option value="weekday">Hafta İçi</option><option value="weekly">Her Hafta</option></select></div>
 </div>
 <button class="btn-primary" onclick="addReminder()">🔔 Ekle</button>
@@ -1247,9 +1267,12 @@ function installPWA() {
 // ==================== SES ====================
 const Sound = {
   ctx: null,
+  _customAudio: {},   // çalan özel ses elementleri
   getCtx() { if(!this.ctx){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch{return null}} return this.ctx; },
   play(type) {
     try {
+      // Özel yüklenen ses mi? (örn. "ozel_remNotif" veya "ozel_namaz")
+      if(type && type.startsWith('ozel_')){ this.playCustom(type); return; }
       const c=this.getCtx(); if(!c)return;
       if(c.state==='suspended')c.resume();
       if(type==='bell'){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(830,c.currentTime);g.gain.setValueAtTime(0.6,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+1.5);o.start();o.stop(c.currentTime+1.5);}
@@ -1257,8 +1280,81 @@ const Sound = {
       else if(type==='azan'){[440,494,523,587,659,587,523,494].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(f,c.currentTime+i*0.3);g.gain.setValueAtTime(0.5,c.currentTime+i*0.3);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+i*0.3+0.25);o.start(c.currentTime+i*0.3);o.stop(c.currentTime+i*0.3+0.25);});}
       else if(type==='tick'){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(1200,c.currentTime);g.gain.setValueAtTime(0.25,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.08);o.start();o.stop(c.currentTime+0.08);}
     } catch(e){}
-  }
+  },
+  async playCustom(key){
+    try {
+      const dataUrl = await sesYukleDB(key);
+      if(!dataUrl){ this.play('bell'); return; } // ses yoksa zile düş
+      // Önceki sesi durdur
+      if(this._customAudio[key]){ try{ this._customAudio[key].pause(); }catch(e){} }
+      const a = new Audio(dataUrl);
+      a.volume = 1.0;
+      this._customAudio[key] = a;
+      a.play().catch(()=>{});
+    } catch(e){ this.play('bell'); }
+  },
+  durdurCustom(key){ if(this._customAudio[key]){ try{ this._customAudio[key].pause(); this._customAudio[key].currentTime=0; }catch(e){} } }
 };
+
+// ==================== ÖZEL SES SAKLAMA (IndexedDB) ====================
+// Yüklenen ses dosyaları cihazda saklanır (localStorage'a sığmayacak kadar büyük olabilir)
+let _sesDB = null;
+function sesDBac(){
+  return new Promise((res,rej)=>{
+    if(_sesDB){ res(_sesDB); return; }
+    const r = indexedDB.open('ManeviSesDB', 1);
+    r.onupgradeneeded = (e)=>{ const db=e.target.result; if(!db.objectStoreNames.contains('sesler')) db.createObjectStore('sesler'); };
+    r.onsuccess = (e)=>{ _sesDB=e.target.result; res(_sesDB); };
+    r.onerror = (e)=>rej(e);
+  });
+}
+async function sesKaydetDB(key, dataUrl){
+  const db = await sesDBac();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction('sesler','readwrite');
+    tx.objectStore('sesler').put(dataUrl, key);
+    tx.oncomplete = ()=>res(true);
+    tx.onerror = (e)=>rej(e);
+  });
+}
+async function sesYukleDB(key){
+  const db = await sesDBac();
+  return new Promise((res)=>{
+    const tx = db.transaction('sesler','readonly');
+    const rq = tx.objectStore('sesler').get(key);
+    rq.onsuccess = ()=>res(rq.result||null);
+    rq.onerror = ()=>res(null);
+  });
+}
+async function sesSilDB(key){
+  const db = await sesDBac();
+  return new Promise((res)=>{
+    const tx = db.transaction('sesler','readwrite');
+    tx.objectStore('sesler').delete(key);
+    tx.oncomplete = ()=>res(true);
+    tx.onerror = ()=>res(false);
+  });
+}
+// Ses dosyası seç → dataURL'e çevir → DB'ye kaydet
+function sesDosyaSec(key, callback){
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='audio/*';
+  inp.onchange = ()=>{
+    const f = inp.files[0];
+    if(!f) return;
+    if(f.size > 5*1024*1024){ notify('Ses dosyası çok büyük (max 5MB)','error'); return; }
+    const rd = new FileReader();
+    rd.onload = async ()=>{
+      try {
+        await sesKaydetDB(key, rd.result);
+        notify('✅ Ses kaydedildi: '+f.name,'success');
+        if(callback) callback(f.name);
+      } catch(e){ notify('Ses kaydedilemedi','error'); }
+    };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
+}
 
 // ==================== VERİ ====================
 const _now = new Date();
@@ -1604,6 +1700,18 @@ function loadPrayerNotifSettings(){
   const ks = document.getElementById('kerahatNotifStatus');
   if(kt) kt.classList.toggle('on', kerOn);
   if(ks) ks.textContent = kerOn ? 'Bildirim: Açık' : 'Bildirim: Kapalı';
+  // Namaz vakti ses seçimi
+  const nss = document.getElementById('namazSesSelect');
+  if(nss) nss.value = localStorage.getItem('namazSes') || 'azan';
+}
+
+// Hatırlatıcı ses seçimi değişince (preview yok, sadece seçim)
+function remSesDegisti(){ /* seçim kaydı addReminder/saveReminder'da yapılır */ }
+
+// Namaz vakti sesini kaydet
+function namazSesKaydet(){
+  const nss = document.getElementById('namazSesSelect');
+  if(nss){ localStorage.setItem('namazSes', nss.value); }
 }
 
 function toggleKerahatNotif(){
@@ -1806,7 +1914,7 @@ function findNextPrayer(timings){
     }
     if(dist===0&&!nowNotified){
       nowNotified=true;
-      Sound.play('azan');
+      Sound.play(localStorage.getItem('namazSes')||'azan');
       sendNotification('🕌 '+nextName+' Vakti Girdi!','Hayırlı namazlar! 🤲');
       notify('🕌 '+nextName+' vakti girdi!','success');
     }
@@ -1939,7 +2047,11 @@ function editReminder(id){
       <div class="fg"><label>🕐 Saat</label><input type="time" id="erTime" value="${rm.time}"></div>
     </div>
     <div class="row">
-      <div class="fg"><label>🔊 Ses</label><select id="erSound"><option value="bell" ${rm.sound==='bell'?'selected':''}>🔔 Zil</option><option value="alarm" ${rm.sound==='alarm'?'selected':''}>⏰ Alarm</option><option value="azan" ${rm.sound==='azan'?'selected':''}>🕌 Ezan</option></select></div>
+      <div class="fg"><label>🔊 Ses</label><select id="erSound"><option value="bell" ${rm.sound==='bell'?'selected':''}>🔔 Zil</option><option value="alarm" ${rm.sound==='alarm'?'selected':''}>⏰ Alarm</option><option value="azan" ${rm.sound==='azan'?'selected':''}>🕌 Ezan</option><option value="ozel_remNotif" ${rm.sound==='ozel_remNotif'?'selected':''}>📂 Kendi Sesim</option></select>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button type="button" onclick="sesDosyaSec('ozel_remNotif',()=>{document.getElementById('erSound').value='ozel_remNotif';})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">📂 Ses Yükle</button>
+        <button type="button" onclick="Sound.play(document.getElementById('erSound').value)" style="flex:1;background:#1B5E20;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">▶️ Dinle</button>
+      </div></div>
       <div class="fg"><label>🔄 Tekrar</label><select id="erRepeat"><option value="once" ${rm.repeat==='once'?'selected':''}>Bir Kez</option><option value="daily" ${rm.repeat==='daily'?'selected':''}>Her Gün</option><option value="weekday" ${rm.repeat==='weekday'?'selected':''}>Hafta İçi</option><option value="weekly" ${rm.repeat==='weekly'?'selected':''}>Her Hafta</option></select></div>
     </div>
     <button class="btn-primary" onclick="saveReminder(${id})">💾 Kaydet</button>`;
