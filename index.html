@@ -648,6 +648,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div style="display:flex;gap:6px;margin-top:6px">
     <button type="button" onclick="sesDosyaSec('ozel_remNotif',()=>{document.getElementById('remSound').value='ozel_remNotif';})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">📂 Ses Yükle</button>
     <button type="button" onclick="Sound.play(document.getElementById('remSound').value)" style="flex:1;background:#1B5E20;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">▶️ Dinle</button>
+    <button type="button" onclick="sesDurdurTumu()" style="flex:1;background:#757575;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">⏹️ Durdur</button>
   </div>
 </div>
 <div class="fg"><label>🔄 Tekrar</label><select id="remRepeat"><option value="once">Bir Kez</option><option value="daily">Her Gün</option><option value="weekday">Hafta İçi</option><option value="weekly">Her Hafta</option></select></div>
@@ -1309,45 +1310,76 @@ function sesDBac(){
   });
 }
 async function sesKaydetDB(key, dataUrl){
-  const db = await sesDBac();
-  return new Promise((res,rej)=>{
-    const tx = db.transaction('sesler','readwrite');
-    tx.objectStore('sesler').put(dataUrl, key);
-    tx.oncomplete = ()=>res(true);
-    tx.onerror = (e)=>rej(e);
-  });
+  // 1) Yerel IndexedDB'ye yaz (hızlı erişim, çevrimdışı çalışır)
+  try {
+    const db = await sesDBac();
+    await new Promise((res,rej)=>{
+      const tx = db.transaction('sesler','readwrite');
+      tx.objectStore('sesler').put(dataUrl, key);
+      tx.oncomplete = ()=>res(true);
+      tx.onerror = (e)=>rej(e);
+    });
+  } catch(e){ console.warn('IndexedDB ses kayıt hatası', e); }
+  // 2) Supabase'e yaz (telefon + bilgisayar senkronu için)
+  try {
+    if(typeof sbSet === 'function' && sbClient){
+      await sbSet('ses_'+key, dataUrl);  // user_data tablosuna dataURL olarak
+    }
+  } catch(e){ console.warn('Bulut ses kayıt hatası', e); }
+  return true;
 }
 async function sesYukleDB(key){
-  const db = await sesDBac();
-  return new Promise((res)=>{
-    const tx = db.transaction('sesler','readonly');
-    const rq = tx.objectStore('sesler').get(key);
-    rq.onsuccess = ()=>res(rq.result||null);
-    rq.onerror = ()=>res(null);
-  });
+  // 1) Önce yerel IndexedDB'den dene (hızlı)
+  try {
+    const db = await sesDBac();
+    const yerel = await new Promise((res)=>{
+      const tx = db.transaction('sesler','readonly');
+      const rq = tx.objectStore('sesler').get(key);
+      rq.onsuccess = ()=>res(rq.result||null);
+      rq.onerror = ()=>res(null);
+    });
+    if(yerel) return yerel;
+  } catch(e){ /* yoksa buluta bak */ }
+  // 2) Yerelde yoksa buluttan al (başka cihazda yüklenmiş olabilir) + yerele kopyala
+  try {
+    if(typeof getData === 'function'){
+      const bulut = getData('ses_'+key);
+      if(bulut && typeof bulut === 'string' && bulut.startsWith('data:')){
+        // Yerele de yaz ki sonra hızlı olsun
+        try { const db = await sesDBac(); const tx=db.transaction('sesler','readwrite'); tx.objectStore('sesler').put(bulut, key); } catch(e){}
+        return bulut;
+      }
+    }
+  } catch(e){ /* yok */ }
+  return null;
 }
 async function sesSilDB(key){
-  const db = await sesDBac();
-  return new Promise((res)=>{
-    const tx = db.transaction('sesler','readwrite');
-    tx.objectStore('sesler').delete(key);
-    tx.oncomplete = ()=>res(true);
-    tx.onerror = ()=>res(false);
-  });
+  try {
+    const db = await sesDBac();
+    await new Promise((res)=>{
+      const tx = db.transaction('sesler','readwrite');
+      tx.objectStore('sesler').delete(key);
+      tx.oncomplete = ()=>res(true);
+      tx.onerror = ()=>res(false);
+    });
+  } catch(e){}
+  try { if(typeof setData === 'function') setData('ses_'+key, ''); } catch(e){}
+  return true;
 }
-// Ses dosyası seç → dataURL'e çevir → DB'ye kaydet
+// Ses dosyası seç → dataURL'e çevir → DB'ye + buluta kaydet
 function sesDosyaSec(key, callback){
   const inp = document.createElement('input');
   inp.type='file'; inp.accept='audio/*';
   inp.onchange = ()=>{
     const f = inp.files[0];
     if(!f) return;
-    if(f.size > 5*1024*1024){ notify('Ses dosyası çok büyük (max 5MB)','error'); return; }
+    if(f.size > 5*1024*1024){ notify('Ses dosyası çok büyük (max 5MB). Daha kısa bir ses seçin.','error'); return; }
+    notify('⏳ Ses kaydediliyor...','info');
     const rd = new FileReader();
     rd.onload = async ()=>{
       try {
         await sesKaydetDB(key, rd.result);
-        notify('✅ Ses kaydedildi: '+f.name,'success');
+        notify('✅ Ses kaydedildi: '+f.name+' (tüm cihazlarınızda çalar)','success');
         if(callback) callback(f.name);
       } catch(e){ notify('Ses kaydedilemedi','error'); }
     };
@@ -1714,6 +1746,18 @@ function namazSesKaydet(){
   if(nss){ localStorage.setItem('namazSes', nss.value); }
 }
 
+// Çalan tüm sesleri durdur (özel yüklenenler dahil)
+function sesDurdurTumu(){
+  try {
+    // Özel ses elementlerini durdur
+    Object.keys(Sound._customAudio||{}).forEach(k=>{
+      try { Sound._customAudio[k].pause(); Sound._customAudio[k].currentTime=0; }catch(e){}
+    });
+    // Konuşma sentezini de durdur (sesli okuma)
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  } catch(e){}
+}
+
 function toggleKerahatNotif(){
   const cur = localStorage.getItem('kerahatNotif') !== 'false';
   const yeni = !cur;
@@ -2051,6 +2095,7 @@ function editReminder(id){
       <div style="display:flex;gap:6px;margin-top:6px">
         <button type="button" onclick="sesDosyaSec('ozel_remNotif',()=>{document.getElementById('erSound').value='ozel_remNotif';})" style="flex:1;background:#FF9800;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">📂 Ses Yükle</button>
         <button type="button" onclick="Sound.play(document.getElementById('erSound').value)" style="flex:1;background:#1B5E20;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">▶️ Dinle</button>
+        <button type="button" onclick="sesDurdurTumu()" style="flex:1;background:#757575;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer">⏹️ Durdur</button>
       </div></div>
       <div class="fg"><label>🔄 Tekrar</label><select id="erRepeat"><option value="once" ${rm.repeat==='once'?'selected':''}>Bir Kez</option><option value="daily" ${rm.repeat==='daily'?'selected':''}>Her Gün</option><option value="weekday" ${rm.repeat==='weekday'?'selected':''}>Hafta İçi</option><option value="weekly" ${rm.repeat==='weekly'?'selected':''}>Her Hafta</option></select></div>
     </div>
@@ -4258,62 +4303,54 @@ const BOYAMA_YAPILAR = {
   },
   otopark: {
     ad:'Katlı Garaj 🅿️',
-    bolgeler:['gokyuzu','zemin','cati','kat3','kat2','kat1','dosemeler','rampa3','rampa2','rampaGiris','asansor','tabela','araba1','araba2','araba3','araba4','agac'],
-    svg:(b)=>`<svg viewBox="0 0 300 320" style="width:100%;max-width:300px;height:auto">
-      <rect id="bz-gokyuzu" onclick="boyamaBoya('gokyuzu')" x="0" y="0" width="300" height="320" fill="${b.gokyuzu||'#f0f0f0'}" stroke="#ccc" style="cursor:pointer"/>
-      <rect id="bz-zemin" onclick="boyamaBoya('zemin')" x="0" y="290" width="300" height="30" fill="${b.zemin||'#fff'}" stroke="#333" style="cursor:pointer"/>
-      <!-- Yan ağaç (süs) -->
-      <g><rect x="277" y="262" width="8" height="28" fill="#8D6E63"/>
-      <circle id="bz-agac" onclick="boyamaBoya('agac')" cx="281" cy="252" r="18" fill="${b.agac||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/></g>
-      <!-- ÇATI (üst açık teras, korkuluklu) -->
-      <path id="bz-cati" onclick="boyamaBoya('cati')" d="M42 64 L228 64 L214 44 L56 44 Z" fill="${b.cati||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
-      <!-- Çatı korkuluğu -->
-      <line x1="42" y1="64" x2="228" y2="64" stroke="#333" stroke-width="1"/>
-      ${Array.from({length:12},(_,i)=>`<line x1="${52+i*15}" y1="56" x2="${52+i*15}" y2="64" stroke="#999" stroke-width="1"/>`).join('')}
-      <!-- Tabela (P işareti levhası) -->
-      <rect id="bz-tabela" onclick="boyamaBoya('tabela')" x="120" y="18" width="30" height="26" rx="3" fill="${b.tabela||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
-      <text x="135" y="39" font-size="20" font-weight="800" text-anchor="middle" fill="#333" style="pointer-events:none">P</text>
-      <line x1="135" y1="44" x2="135" y2="64" stroke="#333" stroke-width="2"/>
-      <!-- 3 KAT BİNA -->
-      <rect id="bz-kat3" onclick="boyamaBoya('kat3')" x="42" y="64" width="186" height="58" fill="${b.kat3||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
-      <rect id="bz-kat2" onclick="boyamaBoya('kat2')" x="42" y="138" width="186" height="58" fill="${b.kat2||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
-      <rect id="bz-kat1" onclick="boyamaBoya('kat1')" x="42" y="212" width="186" height="58" fill="${b.kat1||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
-      <!-- KAT DÖŞEMELERİ (kalın katlar arası) -->
-      <g id="bz-dosemeler" onclick="boyamaBoya('dosemeler')" style="cursor:pointer">
-        <rect x="42" y="122" width="186" height="8" fill="${b.dosemeler||'#fff'}" stroke="#333" stroke-width="1.5"/>
-        <rect x="42" y="196" width="186" height="8" fill="${b.dosemeler||'#fff'}" stroke="#333" stroke-width="1.5"/>
-        <rect x="42" y="270" width="186" height="8" fill="${b.dosemeler||'#fff'}" stroke="#333" stroke-width="1.5"/>
+    bolgeler:['gokyuzu','zemin','kat3','kat2','kat1','rampaUst','rampaOrta','rampaAlt','direkler','araba1','araba2','araba3','yikama','dukkan'],
+    svg:(b)=>`<svg viewBox="0 0 300 330" style="width:100%;max-width:300px;height:auto">
+      <rect id="bz-gokyuzu" onclick="boyamaBoya('gokyuzu')" x="0" y="0" width="300" height="330" fill="${b.gokyuzu||'#f0f0f0'}" stroke="#ccc" style="cursor:pointer"/>
+      <rect id="bz-zemin" onclick="boyamaBoya('zemin')" x="0" y="300" width="300" height="30" fill="${b.zemin||'#fff'}" stroke="#333" style="cursor:pointer"/>
+      <!-- BEYAZ DESTEK DİREKLERİ (katları taşıyan) -->
+      <g id="bz-direkler" onclick="boyamaBoya('direkler')" style="cursor:pointer">
+        <rect x="98" y="62" width="11" height="240" fill="${b.direkler||'#fff'}" stroke="#333" stroke-width="2" rx="3"/>
+        <rect x="210" y="62" width="11" height="240" fill="${b.direkler||'#fff'}" stroke="#333" stroke-width="2" rx="3"/>
       </g>
-      <!-- Kat açıklıkları (kolonlar - cephe direkleri) -->
-      ${[80,118,156,194].map(x=>`<line x1="${x}" y1="64" x2="${x}" y2="270" stroke="#bbb" stroke-width="1"/>`).join('')}
-      <!-- EĞİMLİ RAMPALAR (katları bağlayan slot yolu, çapraz) -->
-      <path id="bz-rampa3" onclick="boyamaBoya('rampa3')" d="M52 122 L150 128 L150 114 L52 108 Z" fill="${b.rampa3||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <line x1="52" y1="115" x2="150" y2="121" stroke="#999" stroke-width="1" stroke-dasharray="4 3"/>
-      <path id="bz-rampa2" onclick="boyamaBoya('rampa2')" d="M218 196 L120 202 L120 188 L218 182 Z" fill="${b.rampa2||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <line x1="120" y1="195" x2="218" y2="189" stroke="#999" stroke-width="1" stroke-dasharray="4 3"/>
-      <!-- GİRİŞ RAMPASI (yerden 1. kata) + bariyer -->
-      <path id="bz-rampaGiris" onclick="boyamaBoya('rampaGiris')" d="M12 290 L80 270 L120 270 L52 290 Z" fill="${b.rampaGiris||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <line x1="80" y1="270" x2="80" y2="258" stroke="#333" stroke-width="2"/>
-      <line x1="80" y1="260" x2="98" y2="262" stroke="#E53935" stroke-width="2.5"/>
-      <!-- ASANSÖR/MERDİVEN KULESİ -->
-      <rect id="bz-asansor" onclick="boyamaBoya('asansor')" x="228" y="64" width="28" height="206" fill="${b.asansor||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
-      <line x1="242" y1="72" x2="242" y2="262" stroke="#999" stroke-width="1"/>
-      <rect x="233" y="80" width="18" height="22" fill="none" stroke="#999" stroke-width="1"/>
-      <rect x="233" y="154" width="18" height="22" fill="none" stroke="#999" stroke-width="1"/>
-      <rect x="233" y="228" width="18" height="22" fill="none" stroke="#999" stroke-width="1"/>
-      <!-- ARABALAR (her katta, daha gerçekçi: gövde+cam+teker) -->
-      <g><path id="bz-araba1" onclick="boyamaBoya('araba1')" d="M58 110 Q62 98 74 97 L96 97 Q106 98 110 110 Z" fill="${b.araba1||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <rect x="74" y="100" width="20" height="7" fill="none" stroke="#333" stroke-width="1"/>
-      <circle cx="70" cy="111" r="5" fill="#444"/><circle cx="100" cy="111" r="5" fill="#444"/></g>
-      <g><path id="bz-araba2" onclick="boyamaBoya('araba2')" d="M150 184 Q154 172 166 171 L188 171 Q198 172 202 184 Z" fill="${b.araba2||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <rect x="166" y="174" width="20" height="7" fill="none" stroke="#333" stroke-width="1"/>
-      <circle cx="162" cy="185" r="5" fill="#444"/><circle cx="192" cy="185" r="5" fill="#444"/></g>
-      <g><path id="bz-araba3" onclick="boyamaBoya('araba3')" d="M58 258 Q62 246 74 245 L96 245 Q106 246 110 258 Z" fill="${b.araba3||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <rect x="74" y="248" width="20" height="7" fill="none" stroke="#333" stroke-width="1"/>
-      <circle cx="70" cy="259" r="5" fill="#444"/><circle cx="100" cy="259" r="5" fill="#444"/></g>
-      <!-- Çatıdaki araba -->
-      <g><path id="bz-araba4" onclick="boyamaBoya('araba4')" d="M150 62 Q153 52 164 51 L182 51 Q191 52 194 62 Z" fill="${b.araba4||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
-      <circle cx="160" cy="63" r="4" fill="#444"/><circle cx="184" cy="63" r="4" fill="#444"/></g>
+      <!-- ÜST KAT (üst platform - şehir/yol temalı) -->
+      <path id="bz-kat3" onclick="boyamaBoya('kat3')" d="M70 62 Q70 54 80 54 L250 54 Q260 54 260 64 L260 84 Q260 92 250 92 L80 92 Q70 92 70 84 Z" fill="${b.kat3||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- Üst kat yol işareti (damalı bitiş + ok) -->
+      <rect x="225" y="60" width="20" height="9" fill="none" stroke="#333" stroke-width="1"/>
+      ${Array.from({length:4},(_,i)=>`<rect x="${225+(i%2)*5}" y="${60+Math.floor(i/2)*4.5}" width="5" height="4.5" fill="#333" opacity="0.6"/>`).join('')}
+      <path d="M90 78 L120 78 M115 74 L120 78 L115 82" stroke="#333" stroke-width="1.5" fill="none"/>
+      <!-- ORTA KAT (orta platform - park + yıkama) -->
+      <path id="bz-kat2" onclick="boyamaBoya('kat2')" d="M62 150 Q62 142 72 142 L258 142 Q268 142 268 152 L268 174 Q268 182 258 182 L72 182 Q62 182 62 174 Z" fill="${b.kat2||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- Orta kat park çizgileri -->
+      ${Array.from({length:5},(_,i)=>`<line x1="${90+i*22}" y1="160" x2="${90+i*22}" y2="180" stroke="#999" stroke-width="1"/>`).join('')}
+      <!-- Yıkama istasyonu (kemer) -->
+      <path id="bz-yikama" onclick="boyamaBoya('yikama')" d="M200 165 Q200 150 215 150 Q230 150 230 165 L224 165 Q224 157 215 157 Q206 157 206 165 Z" fill="${b.yikama||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <!-- ALT KAT (alt platform - dükkanlı, dönel kavşak) -->
+      <path id="bz-kat1" onclick="boyamaBoya('kat1')" d="M52 240 Q52 232 62 232 L268 232 Q278 232 278 242 L278 268 Q278 276 268 276 L62 276 Q52 276 52 268 Z" fill="${b.kat1||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- Dönel kavşak (alt katta) -->
+      <circle cx="110" cy="254" r="14" fill="none" stroke="#999" stroke-width="1.5"/>
+      <circle cx="110" cy="254" r="5" fill="#999" opacity="0.4"/>
+      <!-- Dükkan vitrini (alt kat ön yüz) -->
+      <rect id="bz-dukkan" onclick="boyamaBoya('dukkan')" x="160" y="248" width="100" height="24" rx="2" fill="${b.dukkan||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      ${Array.from({length:4},(_,i)=>`<rect x="${166+i*24}" y="252" width="18" height="16" fill="none" stroke="#999" stroke-width="1"/>`).join('')}
+      <!-- KIVRIMLI SPİRAL RAMPALAR (eğri yollar - en belirgin özellik) -->
+      <!-- Üst spiral rampa (sol üst, S kıvrımı) -->
+      <path id="bz-rampaUst" onclick="boyamaBoya('rampaUst')" d="M70 92 Q20 100 22 122 Q24 140 70 140 L70 130 Q40 130 40 120 Q40 108 78 104 Z" fill="${b.rampaUst||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- Orta spiral rampa (sol, U dönüşlü - oval) -->
+      <path id="bz-rampaOrta" onclick="boyamaBoya('rampaOrta')" d="M62 182 Q14 190 14 210 Q14 230 62 230 L62 220 Q34 220 34 206 Q34 194 70 192 Z" fill="${b.rampaOrta||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- Oval iç boşluk -->
+      <ellipse cx="38" cy="206" rx="10" ry="9" fill="none" stroke="#333" stroke-width="1.5"/>
+      <!-- Alt spiral rampa (sağ, yerden çıkış kıvrımı) -->
+      <path id="bz-rampaAlt" onclick="boyamaBoya('rampaAlt')" d="M278 276 Q292 270 290 250 Q288 234 268 236 L268 246 Q280 245 280 256 Q280 268 270 290 Z" fill="${b.rampaAlt||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- Rampa yol ok işaretleri -->
+      <path d="M46 116 L60 116 M56 112 L60 116 L56 120" stroke="#999" stroke-width="1.3" fill="none"/>
+      <path d="M44 204 L58 204 M54 200 L58 204 L54 208" stroke="#999" stroke-width="1.3" fill="none"/>
+      <!-- ARABALAR (her katta küçük araba) -->
+      <g><rect id="bz-araba1" onclick="boyamaBoya('araba1')" x="130" y="68" width="34" height="15" rx="5" fill="${b.araba1||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <circle cx="139" cy="84" r="4" fill="#444"/><circle cx="156" cy="84" r="4" fill="#444"/></g>
+      <g><rect id="bz-araba2" onclick="boyamaBoya('araba2')" x="100" y="157" width="34" height="15" rx="5" fill="${b.araba2||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <circle cx="109" cy="173" r="4" fill="#444"/><circle cx="126" cy="173" r="4" fill="#444"/></g>
+      <g><rect id="bz-araba3" onclick="boyamaBoya('araba3')" x="180" y="247" width="34" height="15" rx="5" fill="${b.araba3||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <circle cx="189" cy="263" r="4" fill="#444"/><circle cx="206" cy="263" r="4" fill="#444"/></g>
     </svg>`
   },
   stadyum: {
@@ -4416,9 +4453,41 @@ const BOYAMA_YAPILAR = {
       <line x1="209" y1="164" x2="225" y2="148" stroke="#333" stroke-width="1.3"/>
       <circle cx="217" cy="156" r="3" fill="#333"/>
     </svg>`
+  },
+  forma: {
+    ad:'Futbol Forması 👕',
+    bolgeler:['arkaplan','govde','kolSol','kolSag','yaka','omuzSol','omuzSag','yanSerit','numara','ay','yildiz'],
+    svg:(b)=>`<svg viewBox="0 0 300 290" style="width:100%;max-width:300px;height:auto">
+      <rect id="bz-arkaplan" onclick="boyamaBoya('arkaplan')" x="0" y="0" width="300" height="290" fill="${b.arkaplan||'#f0f0f0'}" stroke="#ccc" style="cursor:pointer"/>
+      <!-- SOL KOL -->
+      <path id="bz-kolSol" onclick="boyamaBoya('kolSol')" d="M82 72 L34 100 Q24 106 30 118 L48 154 Q53 164 63 158 L90 140 Z" fill="${b.kolSol||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- SAĞ KOL -->
+      <path id="bz-kolSag" onclick="boyamaBoya('kolSag')" d="M218 72 L266 100 Q276 106 270 118 L252 154 Q247 164 237 158 L210 140 Z" fill="${b.kolSag||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- KOL UÇLARI (manşet - beyaz/kontrast detay) -->
+      <path d="M48 154 L63 158 L58 168 L43 163 Z" fill="#fff" stroke="#333" stroke-width="1.5"/>
+      <path d="M252 154 L237 158 L242 168 L257 163 Z" fill="#fff" stroke="#333" stroke-width="1.5"/>
+      <!-- ANA GÖVDE (forma üstü, uzun) -->
+      <path id="bz-govde" onclick="boyamaBoya('govde')" d="M82 72 Q112 56 150 56 Q188 56 218 72 L210 140 L198 148 L198 258 Q198 268 188 268 L112 268 Q102 268 102 258 L102 148 L90 140 Z" fill="${b.govde||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- OMUZ ŞERİTLERİ (milli takım tarzı omuz bantları - boyanabilir) -->
+      <path id="bz-omuzSol" onclick="boyamaBoya('omuzSol')" d="M102 78 Q90 84 90 140 L100 136 L108 86 Z" fill="${b.omuzSol||'#fff'}" stroke="#333" stroke-width="1.5" style="cursor:pointer"/>
+      <path id="bz-omuzSag" onclick="boyamaBoya('omuzSag')" d="M198 78 Q210 84 210 140 L200 136 L192 86 Z" fill="${b.omuzSag||'#fff'}" stroke="#333" stroke-width="1.5" style="cursor:pointer"/>
+      <!-- YAN ŞERİTLER (gövde kenarı dikey bant) -->
+      <g id="bz-yanSerit" onclick="boyamaBoya('yanSerit')" style="cursor:pointer">
+        <path d="M102 150 L110 150 L110 258 Q110 262 106 262 L102 258 Z" fill="${b.yanSerit||'#fff'}" stroke="#333" stroke-width="1"/>
+        <path d="M198 150 L190 150 L190 258 Q190 262 194 262 L198 258 Z" fill="${b.yanSerit||'#fff'}" stroke="#333" stroke-width="1"/>
+      </g>
+      <!-- YAKA (V yaka) -->
+      <path id="bz-yaka" onclick="boyamaBoya('yaka')" d="M120 60 L150 88 L180 60 Q174 74 150 78 Q126 74 120 60 Z" fill="${b.yaka||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <!-- AY (göğüs sol - milli ruh) -->
+      <path id="bz-ay" onclick="boyamaBoya('ay')" d="M128 118 a13 13 0 1 0 0 24 a10 10 0 1 1 0 -24 Z" fill="${b.ay||'#fff'}" stroke="#333" stroke-width="2" style="cursor:pointer"/>
+      <!-- YILDIZ (ay yanında) -->
+      <path id="bz-yildiz" onclick="boyamaBoya('yildiz')" d="M150 124 l2.5 6 6.5 0.3 -5 4.2 1.7 6.3 -5.7 -3.6 -5.7 3.6 1.7 -6.3 -5 -4.2 6.5 -0.3 Z" fill="${b.yildiz||'#fff'}" stroke="#333" stroke-width="1.3" style="cursor:pointer"/>
+      <!-- NUMARA (göğüs ortası - daire) -->
+      <circle id="bz-numara" onclick="boyamaBoya('numara')" cx="150" cy="205" r="30" fill="${b.numara||'#fff'}" stroke="#333" stroke-width="2.5" style="cursor:pointer"/>
+      <text x="150" y="218" font-size="36" font-weight="800" text-anchor="middle" fill="#333" style="pointer-events:none">10</text>
+    </svg>`
   }
 };
-let _boyamaState = null;
 function boyamaBasla() {
   _boyamaState = { yapiKey:'cami', renk:BOYAMA_RENKLER[0], boyanan:{} };
   boyamaGoster();
