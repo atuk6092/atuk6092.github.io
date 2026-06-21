@@ -7799,16 +7799,25 @@ const Y3_PISTLER = {
   gece: { ad:'🌙 Gece Yarışı', ac:'Virajlı gece pisti, farını kullan!', gok:0x0D1B2A, zemin:0x14281C, yol:0x21282E, sis:[30,95], cizgi:0xFFF176, agac:0x16301B, max:2.5, trafikHiz:0.55, gece:true, viraj:1.2, hedef:60 },
 };
 function yaris3dBasla(){
+  // Yeni başlangıçta iki kişilik durumunu sıfırla
+  _y3Mod = _y3Mod || 1;
+  _y3Sira = 1; _y3Skor1 = null; _y3Skor2 = null;
   const el=document.getElementById('oyunlarList');
   el.innerHTML=`
     <div onclick="oyunGeriDon()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
       <div class="card-title" style="justify-content:center">🏁 3D Araba Yarışı</div>
-      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">1) Araba rengini seç:</div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">1) Oyuncu sayısı:</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
+        <button onclick="y3ModSec(1)" id="y3mod1" style="flex:1;background:${_y3Mod===1?'#1B5E20':'var(--bg)'};color:${_y3Mod===1?'#fff':'var(--p)'};border:2px solid #1B5E20;padding:12px;border-radius:12px;font-weight:700;cursor:pointer">👤 Tek Kişi</button>
+        <button onclick="y3ModSec(2)" id="y3mod2" style="flex:1;background:${_y3Mod===2?'#1B5E20':'var(--bg)'};color:${_y3Mod===2?'#fff':'var(--p)'};border:2px solid #1B5E20;padding:12px;border-radius:12px;font-weight:700;cursor:pointer">👥 İki Kişi</button>
+      </div>
+      ${_y3Mod===2?`<div style="background:rgba(27,94,32,0.08);padding:8px;border-radius:8px;font-size:0.8rem;color:var(--tm);margin-bottom:12px">👥 Sıra ile: önce 1. oyuncu yarışır, sonra 2. oyuncu. En sonda kazanan belli olur!</div>`:''}
+      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">2) ${_y3Mod===2?'1. Oyuncu araba rengini':'Araba rengini'} seç:</div>
       <div id="y3RenkSec" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px">
         ${Y3_RENKLER.map((r,i)=>`<div onclick="y3RenkSec(${i})" data-i="${i}" class="y3renk" style="width:42px;height:42px;border-radius:50%;background:#${r.hex.toString(16).padStart(6,'0')};cursor:pointer;border:4px solid ${i===0?'var(--p)':'transparent'};box-shadow:0 2px 6px rgba(0,0,0,0.2)" title="${r.ad}"></div>`).join('')}
       </div>
-      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">2) Pistini seç:</div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:10px 0 6px">3) Pistini seç:</div>
       ${Object.keys(Y3_PISTLER).map(k=>`
         <button onclick="yaris3dOyna('${k}')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:14px;border-radius:14px;font-weight:700;font-size:0.98rem;margin-bottom:9px;cursor:pointer;text-align:left">
           <div>${Y3_PISTLER[k].ad}</div>
@@ -7816,17 +7825,26 @@ function yaris3dBasla(){
         </button>`).join('')}
     </div>`;
 }
+let _y3Mod = 1;        // 1 = tek kişi, 2 = iki kişi
+let _y3Sira = 1;       // hangi oyuncunun sırası (1 veya 2)
+let _y3Skor1 = null;   // 1. oyuncu skoru
+let _y3Skor2 = null;   // 2. oyuncu skoru
+let _y3Pist = null;    // seçilen pist (2. oyuncu aynı pisti oynasın)
+function y3ModSec(m){ _y3Mod = m; yaris3dBasla(); }
 let _y3RenkSecili=0;
 function y3RenkSec(i){
   _y3RenkSecili=i;
   document.querySelectorAll('.y3renk').forEach(el=>{ el.style.border='4px solid '+(parseInt(el.dataset.i)===i?'var(--p)':'transparent'); });
 }
 function yaris3dOyna(pk){
+  _y3Pist = pk;
   const el=document.getElementById('oyunlarList');
+  const oyuncuEtiket = _y3Mod===2 ? `<div style="background:#FFA000;color:#fff;padding:6px;border-radius:8px;font-weight:800;margin-bottom:8px">👤 ${_y3Sira}. OYUNCU SIRASI</div>` : '';
   el.innerHTML=`
     <div onclick="y3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
       <div class="card-title" style="justify-content:center">${Y3_PISTLER[pk].ad}</div>
+      ${oyuncuEtiket}
       ${tamEkranBtn()}
       <div style="display:flex;justify-content:space-around;font-weight:700;color:var(--p);margin-bottom:8px">
         <span>🚗 <span id="y3Skor">0</span></span><span>🚀 <span id="y3Hiz">60 km/s</span></span><span id="y3Mesafe">🏁 50</span>
@@ -8066,20 +8084,91 @@ function y3Bitir(kazandi){
   const s=_y3; if(!s) return;
   s.bitti=true; if(s.raf)cancelAnimationFrame(s.raf);
   y3SesDur();
-  if(kazandi) cocukKutla('yaris');
+  const buSkor = s.skor;
+  try{ s.ren.dispose(); }catch(e){}
+  _y3=null;
+
+  // ---- TEK KİŞİLİK ----
+  if(_y3Mod===1){
+    if(kazandi) cocukKutla('yaris');
+    const el=document.getElementById('oyunlarList');
+    el.innerHTML=`
+      <div onclick="y3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:3.2rem">${kazandi?'🏁🏆':'💥'}</div>
+        <div style="font-size:1.25rem;font-weight:800;color:var(--p);margin:10px 0">${kazandi?'BİTİŞ! Yarışı tamamladın! 🎉':'Yarış bitti!'}</div>
+        <div style="font-size:0.95rem;color:var(--tm);margin-bottom:10px">Solladığın araba: ${buSkor}</div>
+        <button onclick="yaris3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Renk/Pist Seç & Tekrar</button>
+      </div>`;
+    return;
+  }
+
+  // ---- İKİ KİŞİLİK ----
+  if(_y3Sira===1){
+    // 1. oyuncu bitti, skoru sakla, 2. oyuncuya geç
+    _y3Skor1 = buSkor;
+    _y3Sira = 2;
+    const el=document.getElementById('oyunlarList');
+    el.innerHTML=`
+      <div onclick="y3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:3rem">✅</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--p);margin:10px 0">1. Oyuncu bitirdi!</div>
+        <div style="font-size:1.05rem;color:var(--tm);margin-bottom:4px">1. Oyuncu skoru: <b>${buSkor}</b> araba</div>
+        <div style="background:rgba(255,160,0,0.12);padding:10px;border-radius:10px;font-size:0.9rem;margin:14px 0">Şimdi sıra <b>2. Oyuncuda</b>! Hazır olunca başla. Aynı pistte yarışacak.</div>
+        <button onclick="y3IkinciOyuncu()" style="width:100%;background:#FFA000;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;font-size:1rem;cursor:pointer">👤 2. Oyuncu Başlasın ▶️</button>
+      </div>`;
+    return;
+  } else {
+    // 2. oyuncu bitti, kazananı göster
+    _y3Skor2 = buSkor;
+    const s1=_y3Skor1, s2=_y3Skor2;
+    let sonuc, ikon;
+    if(s1>s2){ sonuc='🏆 1. Oyuncu Kazandı!'; ikon='🥇'; }
+    else if(s2>s1){ sonuc='🏆 2. Oyuncu Kazandı!'; ikon='🥇'; }
+    else { sonuc='🤝 Berabere!'; ikon='🤝'; }
+    cocukKutla('yaris');
+    const el=document.getElementById('oyunlarList');
+    el.innerHTML=`
+      <div onclick="y3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:3.4rem">${ikon}</div>
+        <div style="font-size:1.3rem;font-weight:800;color:var(--p);margin:10px 0">${sonuc}</div>
+        <div style="display:flex;gap:10px;justify-content:center;margin:16px 0">
+          <div style="flex:1;background:${s1>=s2?'rgba(76,175,80,0.15)':'var(--bg)'};border:2px solid ${s1>=s2?'#4CAF50':'var(--b)'};border-radius:12px;padding:12px">
+            <div style="font-size:0.8rem;color:var(--tm)">1. Oyuncu</div>
+            <div style="font-size:1.8rem;font-weight:800;color:var(--p)">${s1}</div>
+            <div style="font-size:0.72rem;color:var(--tm)">araba</div>
+          </div>
+          <div style="flex:1;background:${s2>=s1?'rgba(76,175,80,0.15)':'var(--bg)'};border:2px solid ${s2>=s1?'#4CAF50':'var(--b)'};border-radius:12px;padding:12px">
+            <div style="font-size:0.8rem;color:var(--tm)">2. Oyuncu</div>
+            <div style="font-size:1.8rem;font-weight:800;color:var(--p)">${s2}</div>
+            <div style="font-size:0.72rem;color:var(--tm)">araba</div>
+          </div>
+        </div>
+        <button onclick="yaris3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Yeni Yarış</button>
+      </div>`;
+    return;
+  }
+}
+// 2. oyuncu renk seçip aynı pistte başlasın
+function y3IkinciOyuncu(){
   const el=document.getElementById('oyunlarList');
   el.innerHTML=`
     <div onclick="y3Cik()" style="cursor:pointer;color:var(--p);font-weight:600;margin-bottom:10px">← Oyunlara Dön</div>
     <div class="card" style="text-align:center">
-      <div style="font-size:3.2rem">${kazandi?'🏁🏆':'💥'}</div>
-      <div style="font-size:1.25rem;font-weight:800;color:var(--p);margin:10px 0">${kazandi?'BİTİŞ! Yarışı tamamladın! 🎉':'Yarış bitti!'}</div>
-      <div style="font-size:0.95rem;color:var(--tm);margin-bottom:10px">Solladığın araba: ${s.skor}</div>
-      <button onclick="yaris3dBasla()" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;cursor:pointer">🔄 Renk/Pist Seç & Tekrar</button>
+      <div style="background:#FFA000;color:#fff;padding:8px;border-radius:8px;font-weight:800;margin-bottom:12px">👤 2. OYUNCU</div>
+      <div style="font-size:0.95rem;color:var(--tm);margin-bottom:4px">Aşmaya çalış: 1. Oyuncu <b>${_y3Skor1}</b> araba solladı!</div>
+      <div style="font-size:0.9rem;color:var(--tm);margin:12px 0 6px">Araba rengini seç:</div>
+      <div id="y3RenkSec" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px">
+        ${Y3_RENKLER.map((r,i)=>`<div onclick="y3RenkSec(${i})" data-i="${i}" class="y3renk" style="width:42px;height:42px;border-radius:50%;background:#${r.hex.toString(16).padStart(6,'0')};cursor:pointer;border:4px solid ${i===1?'var(--p)':'transparent'};box-shadow:0 2px 6px rgba(0,0,0,0.2)" title="${r.ad}"></div>`).join('')}
+      </div>
+      <button onclick="yaris3dOyna('${_y3Pist}')" style="width:100%;background:#1B5E20;color:#fff;border:none;padding:14px;border-radius:14px;font-weight:700;font-size:1rem;cursor:pointer">🏁 2. Oyuncu Yarışı Başlat</button>
     </div>`;
-  try{ s.ren.dispose(); }catch(e){}
-  _y3=null;
+  // 2. oyuncuya farklı varsayılan renk
+  _y3RenkSecili = 1;
 }
-function y3Cik(){ y3SesDur(); if(_y3){ _y3.bitti=true; if(_y3.raf)cancelAnimationFrame(_y3.raf); try{_y3.ren.dispose();}catch(e){} _y3=null; } tamEkranKapat(); oyunGeriDon(); }
+function y3Cik(){ y3SesDur(); if(_y3){ _y3.bitti=true; if(_y3.raf)cancelAnimationFrame(_y3.raf); try{_y3.ren.dispose();}catch(e){} _y3=null; } _y3Mod=1; _y3Sira=1; tamEkranKapat(); oyunGeriDon(); }
 
 // ---------- 🌀 3D FRİKİK (baraj + falso) ----------
 let _f3=null;
