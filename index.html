@@ -1798,24 +1798,31 @@ function gunlukNotifSaatKaydet(){
 // OneSignal'a günlük bildirim kur (çalışan namaz/görev formatıyla aynı)
 async function gunlukOneSignalKur(){
   try {
-    const oneSignalId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : window._pushId;
-    if(!oneSignalId || !sbClient || !_supabaseUserId){
-      if(!_supabaseUserId){ try{ const {data}=await sbClient.auth.getUser(); _supabaseUserId=data?.user?.id; }catch(e){} }
-      if(!oneSignalId || !sbClient || !_supabaseUserId){ console.warn('OneSignal/Supabase hazır değil (günlük)'); return; }
-    }
+    // OneSignal ID'yi güvenli al (birkaç kaynaktan dene)
+    let oneSignalId = null;
+    try { oneSignalId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : null; } catch(e){}
+    if(!oneSignalId) oneSignalId = window._pushId;
+    // Kullanıcı ID
+    if(!_supabaseUserId){ try{ const {data}=await sbClient.auth.getUser(); _supabaseUserId=data?.user?.id; }catch(e){} }
+
+    // TEŞHİS: neyin eksik olduğunu kullanıcıya göster
+    if(!oneSignalId){ notify('⚠️ Bildirim aboneliği yok. Önce namaz bildirimini açıp izin verin.','error'); console.warn('gunluk: oneSignalId yok'); return; }
+    if(!sbClient){ notify('⚠️ Sunucu bağlantısı yok (çevrimdışı?)','error'); console.warn('gunluk: sbClient yok'); return; }
+    if(!_supabaseUserId){ notify('⚠️ Giriş yapılmamış görünüyor','error'); console.warn('gunluk: userId yok'); return; }
+
     const saat = localStorage.getItem('gunlukNotifSaat')||'08:00';
     const bugun = new Date();
     const [sa,dk] = saat.split(':');
     const ilk = new Date(bugun.getFullYear(),bugun.getMonth(),bugun.getDate(),parseInt(sa),parseInt(dk),0);
     if(ilk <= new Date()) ilk.setDate(ilk.getDate()+1);
-    // Sabit sayısal ID (her zaman aynı ki tekrar kurulunca eskisi güncellensin)
+    // Sabit sayısal ID (Date.now tabanlı - hatırlatıcılarla aynı tarz)
     let gid = parseInt(localStorage.getItem('gunlukNotifId')||'0');
-    if(!gid){ gid = 900000000 + Math.floor(Math.random()*99999999); localStorage.setItem('gunlukNotifId', gid); }
+    if(!gid){ gid = Date.now(); localStorage.setItem('gunlukNotifId', gid); }
     const c = bugununManeviIcerik();
     let mesaj = '';
     if(c.esma) mesaj += '📿 '+c.esma.okunus+' • ';
     mesaj += '📖 '+c.ayet.t;
-    const { error } = await sbClient.functions.invoke('schedule-onesignal', {
+    const { data, error } = await sbClient.functions.invoke('schedule-onesignal', {
       body: {
         title: '🌅 Bugünün Maneviyatı',
         message: mesaj,
@@ -1826,9 +1833,14 @@ async function gunlukOneSignalKur(){
         repeat: 'daily'
       }
     });
-    if(error){ console.error('Günlük bildirim kurulamadı:', error); notify('Günlük bildirim kurulamadı, tekrar deneyin','error'); }
-    else { console.log('✅ Günlük maneviyat OneSignal kuyruğuna alındı (id:'+gid+')'); notify('✅ Günlük bildirim kuruldu (her gün '+saat+')','success'); }
-  } catch(e){ console.error('Günlük OneSignal hatası:', e); }
+    if(error){
+      console.error('Günlük bildirim kurulamadı:', error);
+      notify('❌ Kurulamadı: '+(error.message||'sunucu hatası'),'error');
+    } else {
+      console.log('✅ Günlük maneviyat kuruldu (id:'+gid+')', data);
+      notify('✅ Günlük bildirim kuruldu! Her gün '+saat,'success');
+    }
+  } catch(e){ console.error('Günlük OneSignal hatası:', e); notify('❌ Hata: '+(e.message||e),'error'); }
 }
 async function gunlukOneSignalIptal(){
   try {
