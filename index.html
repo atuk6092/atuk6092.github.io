@@ -1795,16 +1795,22 @@ function gunlukNotifSaatKaydet(){
     if(gunlukNotifEnabled) gunlukOneSignalKur();
   }
 }
-// OneSignal'a günlük tekrarlı bildirim kur (uygulama kapalıyken de gelir - namaz/hatırlatıcı gibi)
+// OneSignal'a günlük bildirim kur (çalışan namaz/görev formatıyla aynı)
 async function gunlukOneSignalKur(){
   try {
-    if(!sbClient || !window._pushId){ console.warn('OneSignal/Supabase hazır değil'); return; }
-    if(!_supabaseUserId){ const {data}=await sbClient.auth.getUser(); _supabaseUserId=data?.user?.id; }
+    const oneSignalId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : window._pushId;
+    if(!oneSignalId || !sbClient || !_supabaseUserId){
+      if(!_supabaseUserId){ try{ const {data}=await sbClient.auth.getUser(); _supabaseUserId=data?.user?.id; }catch(e){} }
+      if(!oneSignalId || !sbClient || !_supabaseUserId){ console.warn('OneSignal/Supabase hazır değil (günlük)'); return; }
+    }
     const saat = localStorage.getItem('gunlukNotifSaat')||'08:00';
     const bugun = new Date();
     const [sa,dk] = saat.split(':');
     const ilk = new Date(bugun.getFullYear(),bugun.getMonth(),bugun.getDate(),parseInt(sa),parseInt(dk),0);
     if(ilk <= new Date()) ilk.setDate(ilk.getDate()+1);
+    // Sabit sayısal ID (her zaman aynı ki tekrar kurulunca eskisi güncellensin)
+    let gid = parseInt(localStorage.getItem('gunlukNotifId')||'0');
+    if(!gid){ gid = 900000000 + Math.floor(Math.random()*99999999); localStorage.setItem('gunlukNotifId', gid); }
     const c = bugununManeviIcerik();
     let mesaj = '';
     if(c.esma) mesaj += '📿 '+c.esma.okunus+' • ';
@@ -1815,20 +1821,22 @@ async function gunlukOneSignalKur(){
         message: mesaj,
         scheduled_at: ilk.toISOString(),
         user_id: _supabaseUserId,
-        player_id: window._pushId,
-        reminder_id: 'gunluk_maneviyat',
+        player_id: oneSignalId,
+        reminder_id: gid,
         repeat: 'daily'
       }
     });
-    if(error) console.error('Günlük bildirim kurulamadı:', error);
-    else console.log('✅ Günlük maneviyat OneSignal kuyruğuna alındı');
+    if(error){ console.error('Günlük bildirim kurulamadı:', error); notify('Günlük bildirim kurulamadı, tekrar deneyin','error'); }
+    else { console.log('✅ Günlük maneviyat OneSignal kuyruğuna alındı (id:'+gid+')'); notify('✅ Günlük bildirim kuruldu (her gün '+saat+')','success'); }
   } catch(e){ console.error('Günlük OneSignal hatası:', e); }
 }
 async function gunlukOneSignalIptal(){
   try {
     if(!sbClient) return;
+    const gid = parseInt(localStorage.getItem('gunlukNotifId')||'0');
+    const oneSignalId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : window._pushId;
     await sbClient.functions.invoke('schedule-onesignal', {
-      body: { cancel: true, reminder_id: 'gunluk_maneviyat', user_id: _supabaseUserId, player_id: window._pushId }
+      body: { cancel: true, reminder_id: gid, user_id: _supabaseUserId, player_id: oneSignalId }
     });
   } catch(e){}
 }
