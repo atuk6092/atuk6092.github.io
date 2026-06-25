@@ -446,6 +446,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="text">"İki günü aynı olan ziyan etti."</div>
 <div class="author">— Hz. Muhammed (s.a.v.)</div>
 </div>
+<div class="daily" style="border-left-color:#FF9800"><div class="lbl" style="color:#FF9800">📿 GÜNÜN ESMASI</div><div class="txt" id="dailyEsma" style="font-weight:700"></div><div class="src" id="dailyEsmaAnlam" style="font-style:normal"></div></div>
 <div class="daily"><div class="lbl">📖 GÜNÜN AYETİ</div><div class="txt" id="dailyAyet"></div><div class="src" id="dailyAyetSrc"></div></div>
 <div class="daily" style="border-left-color:var(--p)"><div class="lbl" style="color:var(--p)">📜 GÜNÜN HADİSİ</div><div class="txt" id="dailyHadis"></div><div class="src" id="dailyHadisSrc"></div></div>
 <div class="stats-grid">
@@ -561,6 +562,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button type="button" onclick="Sound.durdurCustom('ozel_namaz')" style="flex:1;background:#757575;color:#fff;border:none;padding:9px;border-radius:8px;font-weight:600;font-size:0.82rem;cursor:pointer">⏹️ Durdur</button>
     </div>
     <div style="font-size:0.72rem;color:var(--tm);margin-top:6px;line-height:1.4">📂 Kendi ezan/ses dosyanı yükleyebilirsin (max 5MB). Dosya bu cihazda saklanır. Uygulama açık/arka planda yüklüyken tam çalar.</div>
+  </div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">🌅 Günlük Maneviyat Bildirimi</div>
+<div class="row" style="align-items:center;gap:10px">
+<div class="toggle" id="gunlukNotifToggle" onclick="toggleGunlukNotif()"></div>
+<span style="font-size:0.8rem;font-weight:500" id="gunlukNotifStatus">Kapalı</span>
+</div>
+<div id="gunlukNotifOptions" style="display:none;margin-top:10px">
+  <div style="font-size:0.78rem;color:var(--tm);line-height:1.6">
+    ✅ Her gün seçtiğin saatte bildirim gelir:<br>
+    📿 <b>Günün Esması</b> + 📖 <b>Günün Ayeti</b> + 📜 <b>Günün Hadisi</b><br>
+    📱 Uygulama açıkken veya arka planda yüklüyken çalışır.
+  </div>
+  <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--b)">
+    <label style="font-size:0.82rem;font-weight:600;color:var(--p)">🕐 Bildirim Saati</label>
+    <input type="time" id="gunlukNotifSaat" value="08:00" onchange="gunlukNotifSaatKaydet()" style="width:100%;padding:9px;border:1px solid var(--b);border-radius:8px;margin-top:6px;background:var(--bg);color:var(--t)">
+    <button type="button" onclick="gunlukIcerikGoster()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:9px;border-radius:8px;font-weight:600;font-size:0.82rem;cursor:pointer;margin-top:8px">👁️ Bugünün İçeriğini Göster</button>
   </div>
 </div>
 </div>
@@ -1746,6 +1766,123 @@ function namazSesKaydet(){
   if(nss){ localStorage.setItem('namazSes', nss.value); }
 }
 
+// ==================== GÜNLÜK MANEVİYAT BİLDİRİMİ ====================
+let gunlukNotifEnabled = false;
+function toggleGunlukNotif(){
+  gunlukNotifEnabled = !gunlukNotifEnabled;
+  localStorage.setItem('gunlukNotif', gunlukNotifEnabled?'1':'0');
+  const t=document.getElementById('gunlukNotifToggle');
+  const s=document.getElementById('gunlukNotifStatus');
+  const o=document.getElementById('gunlukNotifOptions');
+  if(t) t.classList.toggle('on', gunlukNotifEnabled);
+  if(s) s.textContent = gunlukNotifEnabled?'Açık':'Kapalı';
+  if(o) o.style.display = gunlukNotifEnabled?'block':'none';
+  if(gunlukNotifEnabled){
+    if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission(); }
+    notify('🌅 Günlük maneviyat bildirimi açıldı','success');
+    gunlukNotifZamanla();
+    gunlukOneSignalKur();
+  } else {
+    notify('Günlük bildirim kapatıldı','info');
+    gunlukOneSignalIptal();
+  }
+}
+function gunlukNotifSaatKaydet(){
+  const el=document.getElementById('gunlukNotifSaat');
+  if(el){
+    localStorage.setItem('gunlukNotifSaat', el.value);
+    notify('🕐 Bildirim saati: '+el.value,'success');
+    if(gunlukNotifEnabled) gunlukOneSignalKur();
+  }
+}
+// OneSignal'a günlük tekrarlı bildirim kur (uygulama kapalıyken de gelir - namaz/hatırlatıcı gibi)
+async function gunlukOneSignalKur(){
+  try {
+    if(!sbClient || !window._pushId){ console.warn('OneSignal/Supabase hazır değil'); return; }
+    if(!_supabaseUserId){ const {data}=await sbClient.auth.getUser(); _supabaseUserId=data?.user?.id; }
+    const saat = localStorage.getItem('gunlukNotifSaat')||'08:00';
+    const bugun = new Date();
+    const [sa,dk] = saat.split(':');
+    const ilk = new Date(bugun.getFullYear(),bugun.getMonth(),bugun.getDate(),parseInt(sa),parseInt(dk),0);
+    if(ilk <= new Date()) ilk.setDate(ilk.getDate()+1);
+    const c = bugununManeviIcerik();
+    let mesaj = '';
+    if(c.esma) mesaj += '📿 '+c.esma.okunus+' • ';
+    mesaj += '📖 '+c.ayet.t;
+    const { error } = await sbClient.functions.invoke('schedule-onesignal', {
+      body: {
+        title: '🌅 Bugünün Maneviyatı',
+        message: mesaj,
+        scheduled_at: ilk.toISOString(),
+        user_id: _supabaseUserId,
+        player_id: window._pushId,
+        reminder_id: 'gunluk_maneviyat',
+        repeat: 'daily'
+      }
+    });
+    if(error) console.error('Günlük bildirim kurulamadı:', error);
+    else console.log('✅ Günlük maneviyat OneSignal kuyruğuna alındı');
+  } catch(e){ console.error('Günlük OneSignal hatası:', e); }
+}
+async function gunlukOneSignalIptal(){
+  try {
+    if(!sbClient) return;
+    await sbClient.functions.invoke('schedule-onesignal', {
+      body: { cancel: true, reminder_id: 'gunluk_maneviyat', user_id: _supabaseUserId, player_id: window._pushId }
+    });
+  } catch(e){}
+}
+function loadGunlukNotifSettings(){
+  gunlukNotifEnabled = localStorage.getItem('gunlukNotif')==='1';
+  const t=document.getElementById('gunlukNotifToggle');
+  const s=document.getElementById('gunlukNotifStatus');
+  const o=document.getElementById('gunlukNotifOptions');
+  const saat=document.getElementById('gunlukNotifSaat');
+  if(t) t.classList.toggle('on', gunlukNotifEnabled);
+  if(s) s.textContent = gunlukNotifEnabled?'Açık':'Kapalı';
+  if(o) o.style.display = gunlukNotifEnabled?'block':'none';
+  if(saat) saat.value = localStorage.getItem('gunlukNotifSaat')||'08:00';
+}
+// Bugünün içeriğini ekranda göster (önizleme)
+function gunlukIcerikGoster(){
+  const c = bugununManeviIcerik();
+  let mesaj = '';
+  if(c.esma) mesaj += '📿 '+c.esma.okunus+': '+c.esma.anlam+'\n\n';
+  mesaj += '📖 '+c.ayet.t+' ('+c.ayet.s+')\n\n';
+  mesaj += '📜 '+c.hadis.t+' ('+c.hadis.s+')';
+  alert(mesaj);
+}
+// Bildirim gönder (uygulama açık/arka plandayken)
+function gunlukBildirimGonder(){
+  const c = bugununManeviIcerik();
+  const baslik = '🌅 Bugünün Maneviyatı';
+  let govde = '';
+  if(c.esma) govde += '📿 '+c.esma.okunus+'\n';
+  govde += '📖 '+c.ayet.t+'\n';
+  govde += '📜 '+c.hadis.t;
+  try {
+    if('Notification' in window && Notification.permission==='granted'){
+      new Notification(baslik, { body:govde, icon:'icons/icon-192.png', tag:'gunluk-maneviyat' });
+    }
+  } catch(e){}
+  notify(baslik+' gösterildi','success');
+}
+// Her dakika kontrol: saat geldiyse ve bugün gönderilmediyse bildir
+function gunlukNotifZamanla(){
+  if(window._gunlukNotifInterval) return; // zaten çalışıyor
+  window._gunlukNotifInterval = setInterval(()=>{
+    if(!gunlukNotifEnabled) return;
+    const saat = localStorage.getItem('gunlukNotifSaat')||'08:00';
+    const simdi = new Date();
+    const ss = String(simdi.getHours()).padStart(2,'0')+':'+String(simdi.getMinutes()).padStart(2,'0');
+    const bugun = simdi.toDateString();
+    if(ss===saat && localStorage.getItem('gunlukNotifSonGun')!==bugun){
+      localStorage.setItem('gunlukNotifSonGun', bugun);
+      gunlukBildirimGonder();
+    }
+  }, 60000); // her dakika
+}
+
 // Çalan tüm sesleri durdur (özel yüklenenler dahil)
 function sesDurdurTumu(){
   try {
@@ -2299,7 +2436,29 @@ const hadisler=[
   {t:"Namaz müminin miracıdır.",s:"Hz. Muhammed (s.a.v.)"},
   {t:"Cennet annelerin ayakları altındadır.",s:"Nesai"}
 ];
-function loadDailyContent(){const d=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86400000);const a=ayetler[d%ayetler.length],h=hadisler[d%hadisler.length];document.getElementById('dailyAyet').textContent=a.t;document.getElementById('dailyAyetSrc').textContent='— '+a.s;document.getElementById('dailyHadis').textContent=h.t;document.getElementById('dailyHadisSrc').textContent='— '+h.s}
+function loadDailyContent(){
+  const d=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86400000);
+  const a=ayetler[d%ayetler.length],h=hadisler[d%hadisler.length];
+  document.getElementById('dailyAyet').textContent=a.t;
+  document.getElementById('dailyAyetSrc').textContent='— '+a.s;
+  document.getElementById('dailyHadis').textContent=h.t;
+  document.getElementById('dailyHadisSrc').textContent='— '+h.s;
+  // Günün Esması (99 isim sırayla döner)
+  const esmaEl=document.getElementById('dailyEsma');
+  if(esmaEl && typeof ESMA!=='undefined' && ESMA.length){
+    const e=ESMA[d%ESMA.length];
+    esmaEl.textContent=e.okunus+' ('+e.arapca+')';
+    document.getElementById('dailyEsmaAnlam').textContent=e.anlam;
+  }
+}
+// Bugünün Esma/Ayet/Hadis metnini bildirim için üret
+function bugununManeviIcerik(){
+  const d=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86400000);
+  const e=(typeof ESMA!=='undefined'&&ESMA.length)?ESMA[d%ESMA.length]:null;
+  const a=ayetler[d%ayetler.length];
+  const h=hadisler[d%hadisler.length];
+  return { esma:e, ayet:a, hadis:h };
+}
 
 // ==================== DASHBOARD ====================
 function updateDashboard(){
@@ -2329,6 +2488,7 @@ function initializeApp(){
   loadTheme();
   loadDailyContent();renderTodos();renderLearning();renderHabits();renderJournal();renderReminders();renderNotes();
   loadPrayerDone();loadKaza();loadPrayerNotifSettings();updateDashboard();loadPrayers();loadWeather();scheduleReminders();
+  loadGunlukNotifSettings(); if(gunlukNotifEnabled) gunlukNotifZamanla();
 }
 
 // ==================== OTOMATİK GİRİŞ (SUPABASE) ====================
