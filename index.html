@@ -565,25 +565,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 </div>
-<div class="card">
-<div class="card-title">🌅 Günlük Maneviyat Bildirimi</div>
-<div class="row" style="align-items:center;gap:10px">
-<div class="toggle" id="gunlukNotifToggle" onclick="toggleGunlukNotif()"></div>
-<span style="font-size:0.8rem;font-weight:500" id="gunlukNotifStatus">Kapalı</span>
-</div>
-<div id="gunlukNotifOptions" style="display:none;margin-top:10px">
-  <div style="font-size:0.78rem;color:var(--tm);line-height:1.6">
-    ✅ Her gün seçtiğin saatte bildirim gelir:<br>
-    📿 <b>Günün Esması</b> + 📖 <b>Günün Ayeti</b> + 📜 <b>Günün Hadisi</b><br>
-    📱 Uygulama açıkken veya arka planda yüklüyken çalışır.
-  </div>
-  <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--b)">
-    <label style="font-size:0.82rem;font-weight:600;color:var(--p)">🕐 Bildirim Saati</label>
-    <input type="time" id="gunlukNotifSaat" value="08:00" onchange="gunlukNotifSaatKaydet()" style="width:100%;padding:9px;border:1px solid var(--b);border-radius:8px;margin-top:6px;background:var(--bg);color:var(--t)">
-    <button type="button" onclick="gunlukIcerikGoster()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:9px;border-radius:8px;font-weight:600;font-size:0.82rem;cursor:pointer;margin-top:8px">👁️ Bugünün İçeriğini Göster</button>
-  </div>
-</div>
-</div>
 <div class="prayer-grid">
 <div class="prayer-card" onclick="togglePrayerDone(this,'imsak')" id="pc-imsak"><div class="dot"></div><div class="name">🌙 İmsak</div><div class="time" id="pt-imsak">--:--</div></div>
 <div class="prayer-card" onclick="togglePrayerDone(this,'gunes')" id="pc-gunes"><div class="dot"></div><div class="name">🌅 Güneş</div><div class="time" id="pt-gunes">--:--</div></div>
@@ -703,6 +684,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <button class="pill" id="dtab-hadis" onclick="openDinimTab('hadis',this)">📜 Hadis</button>
   <button class="pill" id="dtab-siyer" onclick="openDinimTab('siyer',this)">🌙 Siyer</button>
   <button class="pill" id="dtab-kitaplar" onclick="openDinimTab('kitaplar',this)">📚 Kitaplar</button>
+  <button class="pill" id="dtab-bildirim" onclick="openDinimTab('bildirim',this)">🔔 Bildirimler</button>
 </div>
 
 <!-- DUALAR -->
@@ -838,6 +820,54 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
   <div id="kt-kitap"><div id="kitapArea"></div></div>
   <div id="kt-sesli" style="display:none"><div id="seslikitapList"></div></div>
+</div>
+</div>
+
+<!-- BİLDİRİMLER (Günlük Maneviyat) -->
+<div id="dsec-bildirim" style="display:none">
+<div class="card">
+  <div class="card-title">🔔 Günlük Maneviyat Bildirimleri</div>
+  <div style="font-size:0.8rem;color:var(--tm);line-height:1.6;margin-bottom:14px">
+    Gün boyu 3 ayrı bildirim alabilirsin. Her birini ayrı açıp kapatabilir, saatini ayarlayabilirsin. 📱 Uygulama açık veya arka planda yüklüyken çalışır.
+  </div>
+
+  <!-- SABAH: AYET -->
+  <div style="border:1px solid var(--b);border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="font-weight:700;color:var(--p)">📖 Günün Ayeti</div>
+      <div class="toggle" id="bldAyetToggle" onclick="toggleBildirim('ayet')"></div>
+    </div>
+    <div id="bldAyetOpt" style="display:none;margin-top:10px">
+      <label style="font-size:0.8rem;color:var(--tm)">🕐 Saat</label>
+      <input type="time" id="bldAyetSaat" value="08:00" onchange="bildirimSaatKaydet('ayet')" style="width:100%;padding:9px;border:1px solid var(--b);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--t)">
+    </div>
+  </div>
+
+  <!-- ÖĞLE: ESMA -->
+  <div style="border:1px solid var(--b);border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="font-weight:700;color:var(--p)">📿 Günün Esması</div>
+      <div class="toggle" id="bldEsmaToggle" onclick="toggleBildirim('esma')"></div>
+    </div>
+    <div id="bldEsmaOpt" style="display:none;margin-top:10px">
+      <label style="font-size:0.8rem;color:var(--tm)">🕐 Saat</label>
+      <input type="time" id="bldEsmaSaat" value="13:00" onchange="bildirimSaatKaydet('esma')" style="width:100%;padding:9px;border:1px solid var(--b);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--t)">
+    </div>
+  </div>
+
+  <!-- İKİNDİ: HADİS -->
+  <div style="border:1px solid var(--b);border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="font-weight:700;color:var(--p)">📜 Günün Hadisi</div>
+      <div class="toggle" id="bldHadisToggle" onclick="toggleBildirim('hadis')"></div>
+    </div>
+    <div id="bldHadisOpt" style="display:none;margin-top:10px">
+      <label style="font-size:0.8rem;color:var(--tm)">🕐 Saat</label>
+      <input type="time" id="bldHadisSaat" value="16:30" onchange="bildirimSaatKaydet('hadis')" style="width:100%;padding:9px;border:1px solid var(--b);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--t)">
+    </div>
+  </div>
+
+  <button type="button" onclick="gunlukIcerikGoster()" style="width:100%;background:#FF9800;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:600;font-size:0.85rem;cursor:pointer">👁️ Bugünün İçeriğini Göster</button>
 </div>
 </div>
 
@@ -1766,102 +1796,107 @@ function namazSesKaydet(){
   if(nss){ localStorage.setItem('namazSes', nss.value); }
 }
 
-// ==================== GÜNLÜK MANEVİYAT BİLDİRİMİ ====================
-let gunlukNotifEnabled = false;
-function toggleGunlukNotif(){
-  gunlukNotifEnabled = !gunlukNotifEnabled;
-  localStorage.setItem('gunlukNotif', gunlukNotifEnabled?'1':'0');
-  const t=document.getElementById('gunlukNotifToggle');
-  const s=document.getElementById('gunlukNotifStatus');
-  const o=document.getElementById('gunlukNotifOptions');
-  if(t) t.classList.toggle('on', gunlukNotifEnabled);
-  if(s) s.textContent = gunlukNotifEnabled?'Açık':'Kapalı';
-  if(o) o.style.display = gunlukNotifEnabled?'block':'none';
-  if(gunlukNotifEnabled){
-    if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission(); }
-    notify('🌅 Günlük maneviyat bildirimi açıldı','success');
+// Açılışta: en az bir bildirim açıksa yedek zamanlayıcıyı başlat
+function loadGunlukNotifZamanlayici(){
+  if(bildirimAcik('ayet')||bildirimAcik('esma')||bildirimAcik('hadis')){
     gunlukNotifZamanla();
-    gunlukOneSignalKur();
+  }
+}
+// ==================== GÜNLÜK MANEVİYAT BİLDİRİMLERİ (3 AYRI) ====================
+// Tipler: 'ayet' (sabah), 'esma' (öğle), 'hadis' (ikindi)
+const BILDIRIM_TIPLERI = {
+  ayet:  { ad:'📖 Günün Ayeti',  vsaat:'08:00', baslik:'📖 Günün Ayeti' },
+  esma:  { ad:'📿 Günün Esması', vsaat:'13:00', baslik:'📿 Günün Esması' },
+  hadis: { ad:'📜 Günün Hadisi', vsaat:'16:30', baslik:'📜 Günün Hadisi' }
+};
+function bildirimAcik(tip){ return localStorage.getItem('bld_'+tip)==='1'; }
+function bildirimSaati(tip){ return localStorage.getItem('bld_'+tip+'_saat')||BILDIRIM_TIPLERI[tip].vsaat; }
+
+function toggleBildirim(tip){
+  const yeni = !bildirimAcik(tip);
+  localStorage.setItem('bld_'+tip, yeni?'1':'0');
+  const t=document.getElementById('bld'+tipBuyuk(tip)+'Toggle');
+  const o=document.getElementById('bld'+tipBuyuk(tip)+'Opt');
+  if(t) t.classList.toggle('on', yeni);
+  if(o) o.style.display = yeni?'block':'none';
+  if(yeni){
+    if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission(); }
+    bildirimOneSignalKur(tip);
   } else {
-    notify('Günlük bildirim kapatıldı','info');
-    gunlukOneSignalIptal();
+    notify(BILDIRIM_TIPLERI[tip].ad+' kapatıldı','info');
+    bildirimOneSignalIptal(tip);
   }
 }
-function gunlukNotifSaatKaydet(){
-  const el=document.getElementById('gunlukNotifSaat');
+function tipBuyuk(tip){ return tip.charAt(0).toUpperCase()+tip.slice(1); }
+function bildirimSaatKaydet(tip){
+  const el=document.getElementById('bld'+tipBuyuk(tip)+'Saat');
   if(el){
-    localStorage.setItem('gunlukNotifSaat', el.value);
-    notify('🕐 Bildirim saati: '+el.value,'success');
-    if(gunlukNotifEnabled) gunlukOneSignalKur();
+    localStorage.setItem('bld_'+tip+'_saat', el.value);
+    if(bildirimAcik(tip)) bildirimOneSignalKur(tip);
+    else notify('🕐 Saat kaydedildi: '+el.value,'success');
   }
 }
-// OneSignal'a günlük bildirim kur (çalışan namaz/görev formatıyla aynı)
-async function gunlukOneSignalKur(){
+// O tipin bugünkü mesajını üret
+function bildirimMesaji(tip){
+  const c = bugununManeviIcerik();
+  if(tip==='ayet')  return { baslik:'📖 Günün Ayeti',  govde: c.ayet.t+' ('+c.ayet.s+')' };
+  if(tip==='esma')  return { baslik:'📿 Günün Esması',  govde: (c.esma?c.esma.okunus+': '+c.esma.anlam:'') };
+  if(tip==='hadis') return { baslik:'📜 Günün Hadisi',  govde: c.hadis.t+' ('+c.hadis.s+')' };
+  return { baslik:'🌅 Maneviyat', govde:'' };
+}
+// OneSignal'a bir bildirimi kur (çalışan hatırlatıcı formatıyla aynı)
+async function bildirimOneSignalKur(tip){
   try {
-    // OneSignal ID'yi güvenli al (birkaç kaynaktan dene)
-    let oneSignalId = null;
-    try { oneSignalId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : null; } catch(e){}
-    if(!oneSignalId) oneSignalId = window._pushId;
-    // Kullanıcı ID
+    let pushId = window._pushId;
+    if(!pushId){ try { pushId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : null; } catch(e){} if(pushId) window._pushId=pushId; }
     if(!_supabaseUserId){ try{ const {data}=await sbClient.auth.getUser(); _supabaseUserId=data?.user?.id; }catch(e){} }
-
-    // TEŞHİS: neyin eksik olduğunu kullanıcıya göster
-    if(!oneSignalId){ notify('⚠️ Bildirim aboneliği yok. Önce namaz bildirimini açıp izin verin.','error'); console.warn('gunluk: oneSignalId yok'); return; }
-    if(!sbClient){ notify('⚠️ Sunucu bağlantısı yok (çevrimdışı?)','error'); console.warn('gunluk: sbClient yok'); return; }
-    if(!_supabaseUserId){ notify('⚠️ Giriş yapılmamış görünüyor','error'); console.warn('gunluk: userId yok'); return; }
-
-    const saat = localStorage.getItem('gunlukNotifSaat')||'08:00';
+    if(!pushId){ notify('⚠️ Bildirim aboneliği hazır değil. Sayfayı yenileyip tekrar deneyin.','error'); return; }
+    if(!sbClient){ notify('⚠️ Sunucu bağlantısı yok','error'); return; }
+    if(!_supabaseUserId){ notify('⚠️ Giriş yapılmamış','error'); return; }
+    const saat = bildirimSaati(tip);
     const bugun = new Date();
     const [sa,dk] = saat.split(':');
     const ilk = new Date(bugun.getFullYear(),bugun.getMonth(),bugun.getDate(),parseInt(sa),parseInt(dk),0);
     if(ilk <= new Date()) ilk.setDate(ilk.getDate()+1);
-    // Sabit sayısal ID (Date.now tabanlı - hatırlatıcılarla aynı tarz)
-    let gid = parseInt(localStorage.getItem('gunlukNotifId')||'0');
-    if(!gid){ gid = Date.now(); localStorage.setItem('gunlukNotifId', gid); }
-    const c = bugununManeviIcerik();
-    let mesaj = '';
-    if(c.esma) mesaj += '📿 '+c.esma.okunus+' • ';
-    mesaj += '📖 '+c.ayet.t;
-    const { data, error } = await sbClient.functions.invoke('schedule-onesignal', {
+    // Her tipe sabit ID (yeniden kurulunca eskisi güncellensin)
+    let bid = parseInt(localStorage.getItem('bld_'+tip+'_id')||'0');
+    if(!bid){ bid = Date.now() + (tip==='ayet'?1:tip==='esma'?2:3); localStorage.setItem('bld_'+tip+'_id', bid); }
+    const m = bildirimMesaji(tip);
+    const { error } = await sbClient.functions.invoke('schedule-onesignal', {
       body: {
-        title: '🌅 Bugünün Maneviyatı',
-        message: mesaj,
+        title: m.baslik,
+        message: m.govde,
         scheduled_at: ilk.toISOString(),
         user_id: _supabaseUserId,
-        player_id: oneSignalId,
-        reminder_id: gid,
+        player_id: window._pushId,
+        reminder_id: bid,
         repeat: 'daily'
       }
     });
-    if(error){
-      console.error('Günlük bildirim kurulamadı:', error);
-      notify('❌ Kurulamadı: '+(error.message||'sunucu hatası'),'error');
-    } else {
-      console.log('✅ Günlük maneviyat kuruldu (id:'+gid+')', data);
-      notify('✅ Günlük bildirim kuruldu! Her gün '+saat,'success');
-    }
-  } catch(e){ console.error('Günlük OneSignal hatası:', e); notify('❌ Hata: '+(e.message||e),'error'); }
+    if(error){ console.error('Bildirim kurulamadı ('+tip+'):', error); notify('❌ Kurulamadı: '+(error.message||'sunucu hatası'),'error'); }
+    else { notify('✅ '+BILDIRIM_TIPLERI[tip].ad+' açıldı (her gün '+saat+')','success'); }
+  } catch(e){ console.error('Bildirim hatası ('+tip+'):', e); notify('❌ Hata: '+(e.message||e),'error'); }
 }
-async function gunlukOneSignalIptal(){
+async function bildirimOneSignalIptal(tip){
   try {
     if(!sbClient) return;
-    const gid = parseInt(localStorage.getItem('gunlukNotifId')||'0');
-    const oneSignalId = (typeof OneSignal!=='undefined') ? OneSignal?.User?.PushSubscription?.id : window._pushId;
+    const bid = parseInt(localStorage.getItem('bld_'+tip+'_id')||'0');
     await sbClient.functions.invoke('schedule-onesignal', {
-      body: { cancel: true, reminder_id: gid, user_id: _supabaseUserId, player_id: oneSignalId }
+      body: { cancel: true, reminder_id: bid, user_id: _supabaseUserId, player_id: window._pushId }
     });
   } catch(e){}
 }
-function loadGunlukNotifSettings(){
-  gunlukNotifEnabled = localStorage.getItem('gunlukNotif')==='1';
-  const t=document.getElementById('gunlukNotifToggle');
-  const s=document.getElementById('gunlukNotifStatus');
-  const o=document.getElementById('gunlukNotifOptions');
-  const saat=document.getElementById('gunlukNotifSaat');
-  if(t) t.classList.toggle('on', gunlukNotifEnabled);
-  if(s) s.textContent = gunlukNotifEnabled?'Açık':'Kapalı';
-  if(o) o.style.display = gunlukNotifEnabled?'block':'none';
-  if(saat) saat.value = localStorage.getItem('gunlukNotifSaat')||'08:00';
+// Ayarları yükle (sekme açılınca)
+function loadBildirimSettings(){
+  ['ayet','esma','hadis'].forEach(tip=>{
+    const acik = bildirimAcik(tip);
+    const t=document.getElementById('bld'+tipBuyuk(tip)+'Toggle');
+    const o=document.getElementById('bld'+tipBuyuk(tip)+'Opt');
+    const s=document.getElementById('bld'+tipBuyuk(tip)+'Saat');
+    if(t) t.classList.toggle('on', acik);
+    if(o) o.style.display = acik?'block':'none';
+    if(s) s.value = bildirimSaati(tip);
+  });
 }
 // Bugünün içeriğini ekranda göster (önizleme)
 function gunlukIcerikGoster(){
@@ -1872,35 +1907,27 @@ function gunlukIcerikGoster(){
   mesaj += '📜 '+c.hadis.t+' ('+c.hadis.s+')';
   alert(mesaj);
 }
-// Bildirim gönder (uygulama açık/arka plandayken)
-function gunlukBildirimGonder(){
-  const c = bugununManeviIcerik();
-  const baslik = '🌅 Bugünün Maneviyatı';
-  let govde = '';
-  if(c.esma) govde += '📿 '+c.esma.okunus+'\n';
-  govde += '📖 '+c.ayet.t+'\n';
-  govde += '📜 '+c.hadis.t;
-  try {
-    if('Notification' in window && Notification.permission==='granted'){
-      new Notification(baslik, { body:govde, icon:'icons/icon-192.png', tag:'gunluk-maneviyat' });
-    }
-  } catch(e){}
-  notify(baslik+' gösterildi','success');
-}
-// Her dakika kontrol: saat geldiyse ve bugün gönderilmediyse bildir
+// Uygulama açıkken yedek kontrol (3 bildirim için)
 function gunlukNotifZamanla(){
-  if(window._gunlukNotifInterval) return; // zaten çalışıyor
+  if(window._gunlukNotifInterval) return;
   window._gunlukNotifInterval = setInterval(()=>{
-    if(!gunlukNotifEnabled) return;
-    const saat = localStorage.getItem('gunlukNotifSaat')||'08:00';
-    const simdi = new Date();
-    const ss = String(simdi.getHours()).padStart(2,'0')+':'+String(simdi.getMinutes()).padStart(2,'0');
-    const bugun = simdi.toDateString();
-    if(ss===saat && localStorage.getItem('gunlukNotifSonGun')!==bugun){
-      localStorage.setItem('gunlukNotifSonGun', bugun);
-      gunlukBildirimGonder();
-    }
-  }, 60000); // her dakika
+    ['ayet','esma','hadis'].forEach(tip=>{
+      if(!bildirimAcik(tip)) return;
+      const saat = bildirimSaati(tip);
+      const simdi = new Date();
+      const ss = String(simdi.getHours()).padStart(2,'0')+':'+String(simdi.getMinutes()).padStart(2,'0');
+      const bugun = simdi.toDateString();
+      if(ss===saat && localStorage.getItem('bld_'+tip+'_songun')!==bugun){
+        localStorage.setItem('bld_'+tip+'_songun', bugun);
+        const m = bildirimMesaji(tip);
+        try {
+          if('Notification' in window && Notification.permission==='granted'){
+            new Notification(m.baslik, { body:m.govde, icon:'icons/icon-192.png', tag:'maneviyat-'+tip });
+          }
+        } catch(e){}
+      }
+    });
+  }, 60000);
 }
 
 // Çalan tüm sesleri durdur (özel yüklenenler dahil)
@@ -2508,7 +2535,7 @@ function initializeApp(){
   loadTheme();
   loadDailyContent();renderTodos();renderLearning();renderHabits();renderJournal();renderReminders();renderNotes();
   loadPrayerDone();loadKaza();loadPrayerNotifSettings();updateDashboard();loadPrayers();loadWeather();scheduleReminders();
-  loadGunlukNotifSettings(); if(gunlukNotifEnabled) gunlukNotifZamanla();
+  loadGunlukNotifZamanlayici();
 }
 
 // ==================== OTOMATİK GİRİŞ (SUPABASE) ====================
@@ -2541,7 +2568,7 @@ let _dinimActiveTab = 'dualar';
 
 function openDinimTab(tab, btn) {
   _dinimActiveTab = tab;
-  ['dualar','esma','zikir','ilmihal','hadis','siyer','kitaplar'].forEach(t => {
+  ['dualar','esma','zikir','ilmihal','hadis','siyer','kitaplar','bildirim'].forEach(t => {
     const sec = document.getElementById('dsec-'+t);
     const b = document.getElementById('dtab-'+t);
     if(sec) sec.style.display = t === tab ? 'block' : 'none';
@@ -2554,6 +2581,7 @@ function openDinimTab(tab, btn) {
   if(tab === 'hadis') { renderHadisler(); renderNeveviHadis(); }
   if(tab === 'siyer') renderSiyer();
   if(tab === 'kitaplar') openKitaplarTab('kitap', document.getElementById('ktab-kitap'));
+  if(tab === 'bildirim') loadBildirimSettings();
 }
 // Kitaplar alt sekme (Kitaplar + Sesli Kitap)
 function openKitaplarTab(tab, btn) {
