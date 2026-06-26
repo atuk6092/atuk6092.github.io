@@ -1870,7 +1870,7 @@ async function bildirimOneSignalKur(tip){
         user_id: _supabaseUserId,
         player_id: window._pushId,
         reminder_id: bid,
-        repeat: 'daily'
+        repeat: 'once'
       }
     });
     if(error){ console.error('Bildirim kurulamadı ('+tip+'):', error); notify('❌ Kurulamadı: '+(error.message||'sunucu hatası'),'error'); }
@@ -2535,7 +2535,7 @@ function initializeApp(){
   loadTheme();
   loadDailyContent();renderTodos();renderLearning();renderHabits();renderJournal();renderReminders();renderNotes();
   loadPrayerDone();loadKaza();loadPrayerNotifSettings();updateDashboard();loadPrayers();loadWeather();scheduleReminders();
-  loadGunlukNotifZamanlayici();
+  try { loadGunlukNotifZamanlayici(); } catch(e){ console.warn('bildirim zamanlayıcı hatası', e); }
 }
 
 // ==================== OTOMATİK GİRİŞ (SUPABASE) ====================
